@@ -161,7 +161,7 @@ void
 otto(int y, int x, char face)
 {
 	int i;
-	int old_mask;
+	sigset_t alrm, old_mask;
 
 #ifdef DEBUG
 	if (debug == NULL) {
@@ -171,10 +171,12 @@ otto(int y, int x, char face)
 	fprintf(debug, "\n%c(%d,%d)", face, y, x);
 #endif
 	(void) signal(SIGALRM, nothing);
-	old_mask = sigblock(sigmask(SIGALRM));
+	sigemptyset(&alrm);
+	sigaddset(&alrm, SIGALRM);
+	sigprocmask(SIG_BLOCK, &alrm, &old_mask);
 	setitimer(ITIMER_REAL, &pause_time, NULL);
-	sigpause(old_mask);
-	sigsetmask(old_mask);
+	sigsuspend(&old_mask);
+	sigprocmask(SIG_SETMASK, &old_mask, NULL);
 
 	/* save away parameters so other functions may use/update info */
 	switch (face) {

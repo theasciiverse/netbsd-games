@@ -157,6 +157,71 @@ have_daemon_addr(const struct sockaddr_storage *addr, socklen_t addrlen)
 	return false;
 }
 
+/*
+ * Asciiverse: whether a daemon address is this machine: loopback, or the
+ * address of one of its interfaces.
+ */
+static bool
+is_local_addr(struct in_addr a)
+{
+	struct ifaddrs *ifp, *ip;
+	bool found = false;
+
+	if ((ntohl(a.s_addr) >> 24) == IN_LOOPBACKNET)
+		return true;
+	if (getifaddrs(&ifp) < 0)
+		return false;
+	for (ip = ifp; ip != NULL && !found; ip = ip->ifa_next) {
+		if (ip->ifa_addr != NULL && ip->ifa_addr->sa_family == AF_INET)
+			found = ((struct sockaddr_in *)ip->ifa_addr)->sin_addr.s_addr
+			    == a.s_addr;
+	}
+	freeifaddrs(ifp);
+	return found;
+}
+
+/*
+ * Asciiverse: whether this reply comes from a local daemon already listed
+ * under another of this machine's addresses. Debian and Ubuntu resolve
+ * the host name to 127.0.1.1, so the query sent to it and the broadcast
+ * reach the same daemon from two addresses; the reply carries the same
+ * port either way. A listed loopback address gives way to the interface
+ * address, which names the machine.
+ */
+static bool
+have_local_daemon(const struct sockaddr_storage *addr, uint16_t port_num)
+{
+	const struct sockaddr_in *sin;
+	unsigned j;
+
+	if (addr->ss_family != AF_INET)
+		return false;
+	sin = (const struct sockaddr_in *)addr;
+	if (!is_local_addr(sin->sin_addr))
+		return false;
+	for (j = 0; j < numdaemons; j++) {
+		if (daemons[j].sin_port == port_num &&
+		    is_local_addr(daemons[j].sin_addr)) {
+			if ((ntohl(daemons[j].sin_addr.s_addr) >> 24) ==
+			    IN_LOOPBACKNET)
+				daemons[j].sin_addr = sin->sin_addr;
+			return true;
+		}
+	}
+	return false;
+}
+
+/*
+ * An IPv4 interface that can broadcast. Linux also lists interfaces
+ * without any address (ifa_addr NULL), and may give no broadcast address.
+ */
+static bool
+isbroadcastif(const struct ifaddrs *ip)
+{
+	return ip->ifa_addr != NULL && ip->ifa_addr->sa_family == AF_INET &&
+	    (ip->ifa_flags & IFF_BROADCAST) && ip->ifa_broadaddr != NULL;
+}
+
 static void
 getbroadcastaddrs(void)
 {
@@ -172,8 +237,7 @@ getbroadcastaddrs(void)
 
 	num = 0;
 	for (ip = ifp; ip; ip = ip->ifa_next) {
-		if ((ip->ifa_addr->sa_family == AF_INET) &&
-		    (ip->ifa_flags & IFF_BROADCAST)) {
+		if (isbroadcastif(ip)) {
 			num++;
 		}
 	}
@@ -184,8 +248,7 @@ getbroadcastaddrs(void)
 
 	i = 0;
 	for (ip = ifp; ip; ip = ip->ifa_next) {
-		if ((ip->ifa_addr->sa_family == AF_INET) &&
-		    (ip->ifa_flags & IFF_BROADCAST)) {
+		if (isbroadcastif(ip)) {
 			memcpy(&broadcastaddrs[i], ip->ifa_broadaddr,
 			       sizeof(broadcastaddrs[i]));
 			i++;
@@ -313,6 +376,10 @@ get_responses(int contactsock)
 		}
 		if (have_daemon_addr(&addr, addrlen)) {
 			/* this shouldn't happen */
+			continue;
+		}
+		if (have_local_daemon(&addr, port_num)) {
+			/* the same local game, answering on another address */
 			continue;
 		}
 

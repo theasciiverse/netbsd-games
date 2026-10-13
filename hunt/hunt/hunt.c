@@ -42,6 +42,9 @@ __RCSID("$NetBSD: hunt.c,v 1.59 2026/03/28 12:40:00 andvar Exp $");
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
 #include <curses.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -59,6 +62,51 @@ static const char Driver[] = OVERRIDE_PATH_HUNTD;
 #else
 static const char Driver[] = PATH_HUNTD;
 #endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+/*
+ * Asciiverse: the huntd beside this hunt (the two are installed together,
+ * anywhere), else huntd in the current directory, else Driver.
+ */
+static const char *
+driver_path(void)
+{
+	static char path[PATH_MAX];
+	char exe[PATH_MAX];
+	char *slash;
+	ssize_t len = -1;
+
+#if defined(__linux__)
+	len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+#elif defined(__APPLE__)
+	{
+		uint32_t size = sizeof(exe);
+		char *real;
+
+		if (_NSGetExecutablePath(exe, &size) == 0 &&
+		    (real = realpath(exe, NULL)) != NULL) {
+			strlcpy(exe, real, sizeof(exe));
+			free(real);
+			len = (ssize_t)strlen(exe);
+		}
+	}
+#endif
+	if (len > 0) {
+		exe[len] = '\0';
+		if ((slash = strrchr(exe, '/')) != NULL) {
+			*slash = '\0';
+			snprintf(path, sizeof(path), "%s/huntd", exe);
+			if (access(path, X_OK) == 0)
+				return path;
+		}
+	}
+	if (access("huntd", X_OK) == 0)
+		return "./huntd";
+	return Driver;
+}
 
 #ifdef INTERNET
 static const char *contactportstr;
@@ -293,15 +341,19 @@ main(int ac, char **av)
 
 	jump_in:
 		do {
+#ifdef SO_USELOOPBACK
 			int option;
+#endif
 
 			huntsocket = socket(SOCK_FAMILY, SOCK_STREAM, 0);
 			if (huntsocket < 0)
 				err(1, "socket");
+#ifdef SO_USELOOPBACK	/* BSD only; Linux has no such option */
 			option = 1;
 			if (setsockopt(huntsocket, SOL_SOCKET, SO_USELOOPBACK,
 			    &option, sizeof option) < 0)
 				warn("setsockopt loopback");
+#endif
 			errno = 0;
 			if (connect(huntsocket, (struct sockaddr *) &Daemon,
 			    DAEMON_SIZE) < 0) {
@@ -480,16 +532,27 @@ start_driver(void)
 		leave(1, "fork failed.");
 	}
 	if (procid == 0) {
+		const char *driver = driver_path();
+		int null;
+
 		(void) signal(SIGINT, SIG_IGN);
+		/* the driver must not write over the player's screen */
+		if ((null = open("/dev/null", O_RDWR)) >= 0) {
+			(void) dup2(null, STDIN_FILENO);
+			(void) dup2(null, STDOUT_FILENO);
+			(void) dup2(null, STDERR_FILENO);
+			if (null > STDERR_FILENO)
+				(void) close(null);
+		}
 #ifndef INTERNET
 		(void) close(huntsocket);
 #else
 		if (contactportstr == NULL)
 #endif
-			execl(Driver, "HUNT", (char *) NULL);
+			execl(driver, "HUNT", (char *) NULL);
 #ifdef INTERNET
 		else
-			execl(Driver, "HUNT", "-p", contactportstr,
+			execl(driver, "HUNT", "-p", contactportstr,
 			      (char *) NULL);
 #endif
 		/* only get here if exec failed */

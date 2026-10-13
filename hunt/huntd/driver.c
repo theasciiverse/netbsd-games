@@ -375,7 +375,7 @@ init(void)
 #ifdef TIOCNOTTY
 	(void) ioctl(fileno(stdout), TIOCNOTTY, NULL);
 #endif
-	(void) setpgrp(getpid(), getpid());
+	(void) setpgid(0, 0);
 	(void) signal(SIGHUP, SIG_IGN);
 	(void) signal(SIGINT, SIG_IGN);
 	(void) signal(SIGQUIT, SIG_IGN);
