@@ -121,6 +121,10 @@ init(int argc, char *argv[])
 		clean_up("must be played on at least 80 x 24 screen");
 	}
 	start_window();
+#ifdef ASCIIVERSE_CENTRE_H
+	/* Asciiverse: centre the whole dungeon, explored or not */
+	nb_fixed(DROWS, DCOLS);
+#endif
 	init_curses = 1;
 
 	md_heed_signals();

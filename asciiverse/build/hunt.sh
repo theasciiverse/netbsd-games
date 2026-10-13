@@ -4,8 +4,11 @@
 cd hunt
 P="-DRANDOM -DREFLECT -DMONITOR -DOOZE -DFLY -DVOLCANO -DBOOTS -DOTTO -DINTERNET"
 I="-Iinclude -include asciiverse-compat.h"
-$CC $CFLAGS $P $I hunt/connect.c hunt/hunt.c hunt/otto.c hunt/playit.c \
-  hunt/server.c "$COMPAT" $LDFLAGS $LIBS -o "$OUT/hunt"
+# the client is centred in the terminal by compat/centre.h and centre.c
+C=$(dirname "$COMPAT")
+$CC $CFLAGS $P $I -include "$C/centre.h" hunt/connect.c hunt/hunt.c \
+  hunt/otto.c hunt/playit.c hunt/server.c "$COMPAT" "$C/centre.c" $LDFLAGS \
+  $LIBS -o "$OUT/hunt"
 $CC $CFLAGS $P $I huntd/answer.c huntd/draw.c huntd/driver.c \
   huntd/execute.c huntd/expl.c huntd/extern.c huntd/makemaze.c \
   huntd/shots.c huntd/support.c huntd/terminal.c "$COMPAT" $LDFLAGS \

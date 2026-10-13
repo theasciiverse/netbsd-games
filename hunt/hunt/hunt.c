@@ -326,6 +326,10 @@ main(int ac, char **av)
 	in_visual = true;
 	if (LINES < SCREEN_HEIGHT || COLS < SCREEN_WIDTH)
 		leavex(1, "Need a larger window");
+#ifdef ASCIIVERSE_CENTRE_H
+	/* Asciiverse: centre the whole arena and status, however much is seen */
+	nb_fixed(SCREEN_HEIGHT, SCREEN_WIDTH);
+#endif
 	clear_the_screen();
 	(void) signal(SIGINT, intr);
 	(void) signal(SIGTERM, sigterm);

@@ -405,14 +405,16 @@ redraw(void)
 		clrtoeol();
 	}
 
-	move(LINES - 1, 0);
+	/*
+	 * Asciiverse: the help line goes under the text, not on the last
+	 * line of the terminal, so that the two are centred as one block
+	 * (compat/centre.h).
+	 */
+	move(imin(max_y + 1, LINES - 1), 0);
 	addstr("~ to quit, * to cheat, ^pnfb to move");
 
 	if (is_solved()) {
-		if (extent_y + 1 - offset_y < LINES - 2)
-			move(extent_y + 1 - offset_y, 0);
-		else
-			addch(' ');
+		addch(' ');
 		attron(A_BOLD | A_STANDOUT);
 		addstr("*solved*");
 		attroff(A_BOLD | A_STANDOUT);
