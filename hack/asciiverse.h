@@ -24,6 +24,12 @@
 #define OXTABS TAB3
 #endif
 
+/* the field centred on a bigger terminal (hack.terminfo.c) */
+#include <signal.h>
+extern volatile sig_atomic_t av_resized;
+void av_replace_field(void);
+void av_redraw_topl(void);
+
 /* where the game keeps its files, and where it finds its read-only ones */
 void av_datadir_init(void);
 const char *av_datafile(const char *);

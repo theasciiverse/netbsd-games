@@ -105,8 +105,11 @@ __RCSID("$NetBSD: hack.tty.c,v 1.16 2011/08/06 20:42:43 dholland Exp $");
  * arnold@ucsf-cgl, wcs@bo95b, cbcephus!pds and others.
  */
 
+#include <errno.h>
+#include <poll.h>
 #include <termios.h>
 #include <termcap.h>
+#include <unistd.h>
 #include "hack.h"
 #include "extern.h"
 
@@ -352,6 +355,17 @@ readchar(void)
 	int             sym;
 
 	(void) fflush(stdout);
+	/* Asciiverse: wait for a key, redrawing centred after a resize */
+	for (;;) {
+		struct pollfd   pfd = { STDIN_FILENO, POLLIN, 0 };
+
+		if (av_resized) {
+			av_replace_field();
+			(void) fflush(stdout);
+		}
+		if (poll(&pfd, 1, -1) >= 0 || errno != EINTR)
+			break;
+	}
 	if ((sym = getchar()) == EOF)
 #ifdef NR_OF_EOFS
 	{			/*

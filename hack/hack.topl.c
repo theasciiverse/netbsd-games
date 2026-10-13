@@ -96,6 +96,18 @@ doredotopl(void)
 	return (0);
 }
 
+/* Asciiverse: show the current top line again (after a resize) */
+void
+av_redraw_topl(void)
+{
+	int             was = flags.toplin;
+
+	if (was && toplines[0]) {
+		redotoplin();
+		flags.toplin = was;
+	}
+}
+
 static void
 redotoplin(void)
 {

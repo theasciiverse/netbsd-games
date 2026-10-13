@@ -66,6 +66,8 @@
 __RCSID("$NetBSD: hack.terminfo.c,v 1.3 2021/05/02 12:50:44 rillig Exp $");
 #endif				/* not lint */
 
+#include <sys/ioctl.h>
+#include <signal.h>
 #include <string.h>
 #include <termios.h>
 #include <term.h>
@@ -77,6 +79,52 @@ __RCSID("$NetBSD: hack.terminfo.c,v 1.3 2021/05/02 12:50:44 rillig Exp $");
 
 char           *CD;		/* tested in pri.c: docorner() */
 int             CO, LI;		/* used in pri.c and whatis.c */
+
+/*
+ * Asciiverse: on a terminal bigger than the 80x24 field, the field is
+ * drawn centred, field_x and field_y cells from the top left corner; all
+ * cursor movement then goes through cursor_address. A resize recomputes
+ * them (SIGWINCH sets av_resized, readchar() redraws).
+ */
+static int      field_x, field_y;
+volatile sig_atomic_t av_resized;
+
+static void
+place_field(void)
+{
+	struct winsize  ws;
+	int             cols = columns, rows = lines;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
+		cols = ws.ws_col;
+		rows = ws.ws_row;
+	}
+	field_x = cols > COLNO && cursor_address ? (cols - COLNO) / 2 : 0;
+	field_y = rows > ROWNO + 2 && cursor_address ? (rows - ROWNO - 2) / 2 : 0;
+}
+
+static void
+on_winch(int sig __unused)
+{
+	av_resized = 1;
+}
+
+/* called by readchar() after a resize: centre the field again */
+void
+av_replace_field(void)
+{
+	av_resized = 0;
+	place_field();
+	if (u.ux) {		/* on a level: draw it again */
+		int             was = flags.toplin;
+
+		flags.toplin = 0;	/* no --More-- for the old screen */
+		docrt();
+		flags.toplin = was;
+		av_redraw_topl();
+	} else
+		clearscreen();
+}
 
 void
 startup(void)
@@ -97,6 +145,15 @@ startup(void)
 		getret();
 	}
 	set_whole_screen();
+	place_field();
+	{
+		struct sigaction sa;
+
+		memset(&sa, 0, sizeof sa);
+		sa.sa_handler = on_winch;
+		sa.sa_flags = SA_RESTART;
+		sigaction(SIGWINCH, &sa, NULL);
+	}
 }
 
 void
@@ -126,7 +183,7 @@ cmov(int x, int y)
 {
 	char *p;
 
-	p = tiparm(cursor_address, y - 1, x - 1);
+	p = tiparm(cursor_address, y - 1 + field_y, x - 1 + field_x);
 	if (p) {
 		xputs(p);
 		cury = y;
@@ -194,6 +251,10 @@ curs(int x, int y)
 
 	if (y == cury && x == curx)
 		return;
+	if (field_x || field_y) {	/* centred: always absolute */
+		cmov(x, y);
+		return;
+	}
 	if (!cursor_right && (curx != x || x <= 3)) { /* Extremely primitive */
 		cmov(x, y);	/* bunker!wtm */
 		return;
@@ -237,6 +298,10 @@ clearscreen(void)
 {
 	xputs(clear_screen);
 	curx = cury = 1;
+	if (field_x || field_y) {
+		curx = cury = 0;
+		cmov(1, 1);
+	}
 }
 
 void
@@ -244,7 +309,9 @@ home(void)
 {
 	char *out;
 
-	if (cursor_home)
+	if (field_x || field_y)
+		cmov(1, 1);
+	else if (cursor_home)
 		xputs(cursor_home);
 	else if ((cursor_address) && (out = tiparm(cursor_address, 0, 0)))
 		xputs(out);

@@ -182,6 +182,8 @@ main(int argc, char *argv[])
 	 */
 	gettty();
 	setbuf(stdout, obuf);
+	/* Asciiverse: unbuffered, so readchar() can wait with poll() */
+	setvbuf(stdin, NULL, _IONBF, 0);
 	setrandom();
 	startup();
 	cls();
