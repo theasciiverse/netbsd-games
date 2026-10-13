@@ -60,8 +60,17 @@ intrp_init(char *tcbuf)
     /* get the real name of the person (%N) */
     /* Must be done after logname is read in because BERKNAMES uses that */
 
-    strcpy(tcbuf,getrealname(getuid()));
-    realname = savestr(tcbuf);
+    /*
+     * Asciiverse: $NAME first, as rn does, so the scoreboard shows the name
+     * the player chose rather than the full name in the system's user
+     * database; then that full name, then the login name.
+     */
+    if ((realname = getenv("NAME")) != NULL && *realname)
+	realname = savestr(realname);
+    else {
+	strcpy(tcbuf,getrealname(getuid()));
+	realname = savestr(*tcbuf ? tcbuf : logname ? logname : "");
+    }
 
     /* name of this host (%H) */
 

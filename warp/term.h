@@ -78,6 +78,16 @@ EXT int charsperhalfsec;
 EXT int real_y INIT(-100);
 EXT int real_x INIT(-100);
 
+/*
+ * Asciiverse: on a terminal bigger than warp's 80x24 screen, the screen
+ * is drawn centred, field_x and field_y cells from the top left corner;
+ * SIGWINCH sets av_resized and play() redraws (term.c).
+ */
+EXT int field_x INIT(0);
+EXT int field_y INIT(0);
+EXT volatile sig_atomic_t av_resized INIT(0);
+void place_field(void);
+
 #ifdef DOINIT
 char filler[] = {0,'\b',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 #else
@@ -289,7 +299,7 @@ EXT char KILLCH;		/* line delete character */
 
 /* define a few handy macros */
 
-#define clear() (do_tc(CL,LINES),real_y=real_x=0)
+#define clear() (do_tc(CL,LINES),real_y=real_x=(field_x||field_y?-100:0))
 #define erase_eol() do_tc(CE,1)
 #define backspace() (do_tc(BC,0),real_x--)
 #define clear_rest() do_tc(CD,LINES)

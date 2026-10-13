@@ -12,6 +12,7 @@
  *
  */
 
+#include <sys/ioctl.h>
 #include "EXTERN.h"
 #include "warp.h"
 #include "bang.h"
@@ -63,6 +64,27 @@ void pushstring(char *);
 #endif
 
 /* terminal initialization */
+
+/* Asciiverse: where the 80x24 screen goes on a bigger terminal */
+void
+place_field(void)
+{
+    struct winsize ws;
+    int cols = COLS, rows = LINES;
+
+    if (ioctl(1, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
+	cols = ws.ws_col;
+	rows = ws.ws_row;
+    }
+    field_x = cols > 80 && CM && *CM ? (cols - 80) / 2 : 0;
+    field_y = rows > 24 && CM && *CM ? (rows - 24) / 2 : 0;
+}
+
+static void
+on_winch(int sig __unused)
+{
+    av_resized = 1;
+}
 
 void
 term_init(void)
@@ -202,6 +224,15 @@ term_set(char *tcbuf) /* temp area for "uncompiled" termcap entry */
 	LINES = 24;
     if (COLS <= 0)
 	COLS = 80;
+    place_field();
+    {
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof sa);
+	sa.sa_handler = on_winch;
+	sa.sa_flags = SA_RESTART;
+	sigaction(SIGWINCH, &sa, NULL);
+    }
 
     BCsize = comp_tc(bsptr,BC,1);
     BC = bsptr;
@@ -447,7 +478,7 @@ move(int y, int x, int chadd)
 		    qaddch(*s++);
     }
     else {
-	tputs(tgoto(CM,x,y),0,cmstore);
+	tputs(tgoto(CM,x+field_x,y+field_y),0,cmstore);
     }
     real_y = y;
     real_x = x;

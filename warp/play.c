@@ -58,6 +58,11 @@ play(void)
 	    roundsleep(2);
 	else
 	    roundsleep(1);
+	if (av_resized) {		/* Asciiverse: centre again */
+	    av_resized = 0;
+	    place_field();
+	    rewrite();
+	}
 	if (ent) {
 	    evely = ent->vely;
 	    evelx = ent->velx;
