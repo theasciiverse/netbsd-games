@@ -285,7 +285,7 @@ sound_bell(void)
 }
 
 void
-delay_output(void)
+hack_delay_output(void)
 {
 
 	/* delay 50 ms - could also use a 'nap'-system call */

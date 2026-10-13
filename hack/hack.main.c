@@ -122,6 +122,7 @@ main(int argc, char *argv[])
 	 *  -d command line option (must be the first option given)
 	 */
 
+	av_datadir_init();
 	dir = getenv("HACKDIR");
 	if (argc > 1 && !strncmp(argv[1], "-d", 2)) {
 		argc--;
@@ -137,6 +138,8 @@ main(int argc, char *argv[])
 		if (!*dir)
 			error("Flag -d must be followed by a directory name.");
 	}
+	if (dir == NULL)
+		dir = av_playground();	/* Asciiverse: the player's own */
 #endif
 
 	/*

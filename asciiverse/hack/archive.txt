@@ -1,0 +1,14 @@
+# What hack's archive holds, beside each other at the top: the binary
+# from out/, then from hack/ the files hack reads at run time from the
+# folder it is started in (av starts a title in its install folder), its
+# man page and both licences. hack writes nothing there: its record,
+# saved games, bones and level files go to bsdgames/hack under the
+# player's XDG data folder.
+out/hack
+hack/hack.6
+hack/help
+hack/hh
+hack/data
+hack/rumors
+hack/COPYRIGHT
+hack/COPYRIGHT-JF

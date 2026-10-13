@@ -408,7 +408,7 @@ void standoutbeg(void);
 void standoutend(void);
 void backsp(void);
 void sound_bell(void);
-void delay_output(void);
+void hack_delay_output(void);
 void cl_eos(void);
 
 /* hack.timeout.c */
