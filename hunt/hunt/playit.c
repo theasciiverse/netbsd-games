@@ -265,12 +265,17 @@ send_stuff(void)
 			nsp++;
 	count = nsp - inp;
 	if (count) {
-#ifdef OTTO
-		Otto_count += count;
-#endif
 		nchar_send -= count;
 		if (nchar_send < 0)
 			count += nchar_send;
+#ifdef OTTO
+		/*
+		 * Asciiverse: count only the keys actually sent; counting
+		 * the ones cut off above left the computer player (-o)
+		 * waiting for an answer to keys the server never got.
+		 */
+		Otto_count += count;
+#endif
 		(void) write(huntsocket, inp, count);
 	}
 }

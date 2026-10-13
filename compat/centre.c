@@ -48,6 +48,12 @@ nb_initscr(void)
 		nb_row = nb_pad != NULL ?
 		    malloc((getmaxx(nb_pad) + 1) * sizeof(chtype)) : NULL;
 		if (nb_pad != NULL && nb_row != NULL) {
+			/*
+			 * no scrolling of screen regions: the picture moves
+			 * by rewriting, as the games do anyway
+			 */
+			idlok(nb_pad, FALSE);
+			idlok(curscr, FALSE);
 			/* keypad and the like are set on stdscr afterwards */
 			stdscr = nb_pad;
 		} else if (nb_pad != NULL) {

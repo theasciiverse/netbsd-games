@@ -192,6 +192,30 @@ otto(int y, int x, char face)
 	/* initially no commands to be sent */
 	comlen = 0;
 
+	/*
+	 * Asciiverse: when otto has stood in the same place facing the
+	 * same way for eight turns (pushing at a way that looks open but
+	 * is not, or at another player it does not see as one), it turns
+	 * and steps somewhere else at random instead of trying forever.
+	 */
+	{
+		static int last_row = -1, last_col = -1, last_facing = -1;
+		static int still;
+
+		if (row == last_row && col == last_col &&
+		    facing == last_facing) {
+			if (++still >= 8) {
+				still = 0;
+				face_and_move_direction(1 + random() % 3, 1);
+				goto done;
+			}
+		} else
+			still = 0;
+		last_row = row;
+		last_col = col;
+		last_facing = facing;
+	}
+
 	/* find something to do */
 	look_around();
 	for (i = 0; i < NUMDIRECTIONS; i++) {

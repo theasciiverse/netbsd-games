@@ -242,8 +242,21 @@ main(int ac, char **av)
 
 again:
 	do {
+		/*
+		 * Asciiverse: keys already read but not yet carried out are
+		 * carried out without waiting for the next network event.
+		 */
+		int wait = INFTIM;
+		for (pp = Player; pp < End_player; pp++)
+			if (pp->p_ncount < pp->p_nchar)
+				wait = 0;
+#ifdef MONITOR
+		for (pp = Monitor; pp < End_monitor; pp++)
+			if (pp->p_ncount < pp->p_nchar)
+				wait = 0;
+#endif
 		errno = 0;
-		while (poll(fdset, 3+MAXPL+MAXMON, INFTIM) < 0)
+		while (poll(fdset, 3+MAXPL+MAXMON, wait) < 0)
 		{
 			if (errno != EINTR)
 				complain(LOG_WARNING, "poll");
@@ -319,15 +332,23 @@ again:
 			}
 		if (fdset[1].revents & POLLIN)
 			send_stats();
+		/*
+		 * Asciiverse: READY also counts keys carried out in a pass
+		 * without new input (the second of two keys that came in
+		 * together); hunt's computer player (-o) waits until every
+		 * key it sent has been counted, and stopped for good when
+		 * one was not.
+		 */
 		for (pp = Player, i = 0; pp < End_player; pp++, i++) {
-			if (fdset[i + 3].revents & POLLIN)
+			if (fdset[i + 3].revents & POLLIN || pp->p_nexec > 0)
 				sendcom(pp, READY, pp->p_nexec);
 			pp->p_nexec = 0;
 			(void) fflush(pp->p_output);
 		}
 #ifdef MONITOR
 		for (pp = Monitor, i = 0; pp < End_monitor; pp++, i++) {
-			if (fdset[i + MAXPL + 3].revents & POLLIN)
+			if (fdset[i + MAXPL + 3].revents & POLLIN ||
+			    pp->p_nexec > 0)
 				sendcom(pp, READY, pp->p_nexec);
 			pp->p_nexec = 0;
 			(void) fflush(pp->p_output);
@@ -907,8 +928,15 @@ check_again:
 	if (pp->p_nchar < 0 && errno == EINTR) {
 		goto check_again;
 	} else if (pp->p_nchar <= 0) {
-		if (errno == EINTR)
+		/*
+		 * Asciiverse: the player's connection is closed (or broken):
+		 * play a 'q' for them, so they leave the game. The original
+		 * did this only when errno was EINTR, which it never is here,
+		 * and left p_nchar at 0, so the 'q' was never read either:
+		 * a client whose terminal went away stayed in the game.
+		 */
 		pp->p_cbuf[0] = 'q';
+		pp->p_nchar = 1;
 	}
 	pp->p_ncount = 0;
 	return true;
