@@ -55,6 +55,8 @@ __RCSID("$NetBSD: canfield.c,v 1.31 2021/05/02 12:50:44 rillig Exp $");
  */
 
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
 
 #include <ctype.h>
 #include <curses.h>
@@ -1632,6 +1634,39 @@ instruct(void)
 }
 
 /*
+ * Asciiverse: without the shared score file (an install without root),
+ * the player's own one in the XDG data folder, bsdgames/cfscores, where
+ * the player's record is the only one, at the start.
+ */
+static int
+openuserscores(void)
+{
+	char path[1024];
+	const char *base = getenv("XDG_DATA_HOME");
+	const char *home = getenv("HOME");
+	int fd;
+
+	if (base != NULL && *base != '\0')
+		snprintf(path, sizeof path, "%s/bsdgames", base);
+	else if (home != NULL && *home != '\0')
+		snprintf(path, sizeof path, "%s/.local/share/bsdgames", home);
+	else
+		return -1;
+	for (char *p = path + 1; *p != '\0'; p++)
+		if (*p == '/') {
+			*p = '\0';
+			mkdir(path, 0755);
+			*p = '/';
+		}
+	mkdir(path, 0755);
+	strlcat(path, "/cfscores", sizeof path);
+	fd = open(path, O_RDWR | O_CREAT, 0644);
+	if (fd >= 0)
+		uid = 0;
+	return fd;
+}
+
+/*
  * procedure to initialize the game
  */
 static void
@@ -1644,6 +1679,8 @@ initall(void)
 	initdeck(deck);
 	uid = getuid();
 	dbfd = open(_PATH_SCORE, O_RDWR);
+	if (dbfd < 0)
+		dbfd = openuserscores();
 
 	/* Revoke setgid privileges */
 	setgid(getgid());

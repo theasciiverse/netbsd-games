@@ -253,9 +253,62 @@ readfile(const char *name)
 }
 
 
+/*
+ * Asciiverse: a quote picked at random from the file _PATH_QUOTES in the
+ * current directory, entries separated by lines holding a single "%" as
+ * in fortune's files; false when there is no such file.
+ */
+static bool
+readlocalquote(void)
+{
+	FILE *f = fopen(_PATH_QUOTES, "r");
+	if (f == NULL)
+		return false;
+
+	char *pick = NULL, *text = NULL, *line = NULL;
+	size_t textlen = 0, linecap = 0, n = 0;
+	ssize_t len;
+
+	/* reservoir sampling: the n-th entry replaces the pick with chance 1/n */
+	while ((len = getline(&line, &linecap, f)) != -1 || textlen > 0) {
+		bool end = len == -1 || strcmp(line, "%\n") == 0;
+		if (!end) {
+			if (reallocarr(&text, textlen + (size_t)len + 1, 1) != 0)
+				err(1, "reallocarr");
+			memcpy(text + textlen, line, (size_t)len + 1);
+			textlen += (size_t)len;
+		} else if (textlen > 0) {
+			if (random() % (long)++n == 0) {
+				free(pick);
+				pick = text;
+			} else
+				free(text);
+			text = NULL;
+			textlen = 0;
+		}
+		if (len == -1)
+			break;
+	}
+	free(line);
+	fclose(f);
+	if (pick == NULL)
+		return false;
+
+	f = fmemopen(pick, strlen(pick), "r");
+	if (f == NULL)
+		err(1, "fmemopen");
+	getquote(f);
+	fclose(f);
+	free(pick);
+	return true;
+}
+
 static void
 readquote(void)
 {
+	if (readlocalquote())
+		return;
+
 	FILE *f = popen(_PATH_FORTUNE, "r");
 	if (f == NULL)
 		err(1, "%s", _PATH_FORTUNE);

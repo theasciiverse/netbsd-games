@@ -28,3 +28,4 @@
  */
 
 #define _PATH_FORTUNE "/usr/games/fortune"
+#define _PATH_QUOTES "maxims"
