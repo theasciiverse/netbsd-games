@@ -98,6 +98,7 @@ __RCSID("$NetBSD: machdep.c,v 1.20 2012/12/01 11:37:27 mbalmer Exp $");
 #include <sys/wait.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <pwd.h>
 
 #ifdef UNIX_BSD4_2
@@ -109,9 +110,17 @@ __RCSID("$NetBSD: machdep.c,v 1.20 2012/12/01 11:37:27 mbalmer Exp $");
 #endif
 
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
+#if !defined(__APPLE__) && !defined(__NetBSD__) && !defined(__FreeBSD__) && \
+    !defined(__OpenBSD__) && !defined(__DragonFly__)
+#include <stdio_ext.h>		/* __fpurge, for glibc and musl */
+#define fpurge(fp)	(__fpurge(fp), 0)
+#endif
 #include "rogue.h"
 #include "pathnames.h"
 
@@ -424,6 +433,49 @@ md_exit(int status)
 	exit(status);
 }
 
+/* md_datafile():
+ *
+ * Asciiverse: the full name of a file the game writes (the score file, a
+ * saved game, a screen dump) given its bare name: in the player's data
+ * folder, $XDG_DATA_HOME or else ~/.local/share, under bsdgames/rogue/,
+ * which is made as needed.  A name with a '/' in it is used as it is, and
+ * so is a bare name when neither variable is set.  The result lives in
+ * one of a few static buffers, so it stays valid while the next few
+ * names are made.
+ */
+
+const char *
+md_datafile(const char *name)
+{
+	static char path[4][1024];
+	static int which;
+	const char *base;
+	char *p;
+
+	if (strchr(name, '/') != NULL)
+		return name;
+	which = (which + 1) % 4;
+	p = path[which];
+	if ((base = getenv("XDG_DATA_HOME")) != NULL && *base != '\0')
+		(void)snprintf(p, sizeof path[0], "%s/bsdgames/rogue", base);
+	else if ((base = getenv("HOME")) != NULL && *base != '\0')
+		(void)snprintf(p, sizeof path[0],
+		    "%s/.local/share/bsdgames/rogue", base);
+	else
+		return name;
+	for (char *q = p + 1; *q != '\0'; q++) {
+		if (*q == '/') {
+			*q = '\0';
+			(void)mkdir(p, 0755);
+			*q = '/';
+		}
+	}
+	(void)mkdir(p, 0755);
+	(void)strlcat(p, "/", sizeof path[0]);
+	(void)strlcat(p, name, sizeof path[0]);
+	return p;
+}
+
 /* md_lock():
  *
  * This function is intended to give the user exclusive access to the score
@@ -443,7 +495,8 @@ md_lock(boolean l)
 
 	if (l) {
 		setegid(egid);
-		if ((fd = open(_PATH_SCOREFILE, O_RDONLY)) < 1) {
+		if ((fd = open(md_datafile(_PATH_SCOREFILE), O_RDONLY | O_CREAT,
+		    0644)) < 1) {
 			setegid(gid);
 			messagef(0, "cannot lock score file");
 			return;

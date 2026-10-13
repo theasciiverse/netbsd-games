@@ -543,6 +543,7 @@ void	md_heed_signals(void);
 void	md_ignore_signals(void);
 int	md_link_count(const char *);
 void	md_lock(boolean);
+const char	*md_datafile(const char *);
 void	md_shell(const char *);
 void	md_sleep(int);
 void	md_slurp(void);

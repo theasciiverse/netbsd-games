@@ -325,7 +325,7 @@ save_screen(void)
 	short i, j;
 	char buf[DCOLS+2];
 
-	if ((fp = fopen(_PATH_SCREENDUMP, "w")) != NULL) {
+	if ((fp = fopen(md_datafile(_PATH_SCREENDUMP), "w")) != NULL) {
 		for (i = 0; i < DROWS; i++) {
 			for (j=0; j<DCOLS; j++) {
 				buf[j] = mvinch(i, j);

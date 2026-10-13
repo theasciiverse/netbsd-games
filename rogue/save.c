@@ -54,6 +54,7 @@ __RCSID("$NetBSD: save.c,v 1.15 2025/04/07 14:36:28 hgutch Exp $");
  */
 
 #include <stdio.h>
+#include <unistd.h>
 #include "rogue.h"
 
 static boolean	has_been_touched(const struct rogue_time *,
@@ -115,6 +116,7 @@ save_into_file(const char *sfile)
 			 */
 		}
 	}
+	sfile = md_datafile(sfile);
 	if (((fp = fopen(sfile, "w")) == NULL) ||
 	    ((file_id = md_get_file_id(sfile)) == -1)) {
 		if (fp)
@@ -180,6 +182,8 @@ restore(const char *fname)
 	int new_file_id, saved_file_id;
 
 	fp = NULL;
+	if (access(fname, F_OK) != 0)	/* Asciiverse: saved where saves go */
+		fname = md_datafile(fname);
 	if (((new_file_id = md_get_file_id(fname)) == -1) ||
 	    ((fp = fopen(fname, "r")) == NULL)) {
 		clean_up("cannot open file");

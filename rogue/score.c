@@ -344,8 +344,8 @@ put_scores(const object *monster, short other)
 	md_lock(1);
 
 	setegid(egid);
-	if ((fp = fopen(_PATH_SCOREFILE, "r+")) == NULL &&
-	    (fp = fopen(_PATH_SCOREFILE, "w+")) == NULL) {
+	if ((fp = fopen(md_datafile(_PATH_SCOREFILE), "r+")) == NULL &&
+	    (fp = fopen(md_datafile(_PATH_SCOREFILE), "w+")) == NULL) {
 		setegid(gid);
 		messagef(0, "cannot read/write/create score file");
 		sf_error();

@@ -31,5 +31,6 @@
  *	@(#)pathnames.h	8.1 (Berkeley) 5/31/93
  */
 
-#define	_PATH_SCOREFILE	"/var/games/rogue.scores"
+/* Asciiverse: kept in the player's data folder, see md_datafile() */
+#define	_PATH_SCOREFILE	"rogue.scores"
 #define _PATH_SCREENDUMP "rogue.screen"
