@@ -1,0 +1,7 @@
+# larn, the help and maze it reads from the folder it starts in, man page,
+# and the notice with Noah Morgan's terms
+out/larn
+larn/datfiles/larn.help
+larn/datfiles/larnmaze
+larn/larn.6
+asciiverse/larn/NOTICE

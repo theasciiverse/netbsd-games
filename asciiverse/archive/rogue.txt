@@ -1,0 +1,4 @@
+# rogue, man page, and the notice with its licence and its never-sold terms
+out/rogue
+rogue/rogue.6
+asciiverse/rogue/NOTICE

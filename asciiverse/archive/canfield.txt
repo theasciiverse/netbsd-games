@@ -1,0 +1,4 @@
+# canfield, man page, licence (from the source header)
+out/canfield
+canfield/canfield/canfield.6
+asciiverse/canfield/LICENSE

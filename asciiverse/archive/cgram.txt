@@ -1,0 +1,5 @@
+# cgram, its maxims (cgram reads ./maxims, see PATCHES.md), man page, licence
+out/cgram
+asciiverse/cgram/maxims
+cgram/cgram.6
+asciiverse/cgram/LICENSE

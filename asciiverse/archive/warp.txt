@@ -1,0 +1,15 @@
+# warp, the star maps and texts it reads from the folder it starts in, man
+# page (warp.man installs as warp.6), licence
+out/warp
+out/warp-data/smap.0
+out/warp-data/smap.1
+out/warp-data/smap.2
+out/warp-data/smap.3
+out/warp-data/smap.4
+out/warp-data/smap.5
+out/warp-data/smap.6
+out/warp-data/smap.7
+out/warp-data/warp.doc
+out/warp-data/warp.news
+warp/warp.man -> warp.6
+warp/COPYRIGHT

@@ -1,0 +1,7 @@
+# hunt and its server huntd side by side (hunt starts the huntd next to
+# it), man pages, licence (from the source headers)
+out/hunt
+out/huntd
+hunt/hunt/hunt.6
+hunt/huntd/huntd.6
+asciiverse/hunt/LICENSE
