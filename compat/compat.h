@@ -16,6 +16,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+/*
+ * musl's struct stat has a field named __unused: read the header before
+ * __unused becomes a macro below (its include guard keeps it from being
+ * read again).
+ */
+#include <sys/stat.h>
 
 #define __RCSID(x)
 #define __COPYRIGHT(x)

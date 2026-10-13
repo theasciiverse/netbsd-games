@@ -11,7 +11,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 export CC="${CC:-cc}"
-export CFLAGS="${CFLAGS:--O2} -std=gnu99 -include $PWD/compat/compat.h -I$PWD/compat -Wno-unused-result"
+export CFLAGS="${CFLAGS:--O2} -std=gnu99 -include $PWD/compat/compat.h -I$PWD/compat -idirafter $PWD/compat/fallback -Wno-unused-result"
 export LDFLAGS="${LDFLAGS:-}"
 export LIBS="${LIBS:--lncursesw}"
 export OUT="$PWD/out"
