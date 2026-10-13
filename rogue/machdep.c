@@ -322,7 +322,13 @@ const char *
 md_gln(void)
 {
 	struct passwd *p;
+	const char *name;
 
+	/* Asciiverse: the name the player's environment gives first */
+	if ((name = getenv("LOGNAME")) != NULL && *name != '\0')
+		return name;
+	if ((name = getenv("USER")) != NULL && *name != '\0')
+		return name;
 	if (!(p = getpwuid(getuid())))
 		return NULL;
 	return p->pw_name;
