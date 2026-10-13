@@ -31,6 +31,9 @@ BSD Games.
   terminal re-centres it, also for games that read their keys without
   `getch()`; `nb_fixed()` centres a field of fixed size whole, however
   much of it is drawn yet.
+- `asciiverse/record/`: the drivers that play each game for its preview
+  in `asciiverse/casts/`, reading the screen through pyte (`rec.py`, from
+  BSD Games').
 - Nothing is setgid and nothing is written to system folders: each game
   keeps its files in the player's data folder, `bsdgames/<game>` under
   `$XDG_DATA_HOME` (else `~/.local/share`), and reads its shipped files
@@ -99,6 +102,21 @@ BSD Games.
 - Centred by `compat/centre.h`, the whole 80x24 arena and status
   (`nb_fixed()`); `hunt` reads its keys itself, so a resize shows at the
   next refresh.
+- Players who vanish leave the game: when a client's connection closed
+  (its terminal closed, or it was killed), `huntd` was meant to play a
+  `q` for it, but did so only when `errno` was `EINTR`, which it never is
+  at the end of a connection, and left the count of keys at 0, so the
+  player stayed in the game for good, and the server with it
+  (`havechar()` in `huntd/driver.c`, a NetBSD bug).
+- The computer player (`hunt -o`) plays on: the server confirms keys
+  with READY only in a pass with new input and dropped the count of keys
+  carried out in other passes, and a second key read with the first
+  waited for the next network event; READY now counts every key carried
+  out, and read keys are carried out at once. The client counted keys
+  that its limit then kept from being sent. Either left otto waiting for
+  ever for answers. And otto, when it has stood still facing the same
+  way for eight turns, now turns and steps somewhere at random instead of
+  pushing at the same spot for ever (`otto.c`).
 - `asciiverse/hunt/LICENSE`: the BSD licence from the source headers.
 
 ## larn
