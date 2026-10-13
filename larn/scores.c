@@ -31,6 +31,8 @@ __RCSID("$NetBSD: scores.c,v 1.22 2021/05/02 12:50:45 rillig Exp $");
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

@@ -9,6 +9,7 @@ __RCSID("$NetBSD: diag.c,v 1.13 2012/06/19 05:30:43 dholland Exp $");
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

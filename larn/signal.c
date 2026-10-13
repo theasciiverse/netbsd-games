@@ -78,7 +78,13 @@ tstop(int n)
 	 * looks like BSD4.2 or higher - must clr mask for signal to take
 	 * effect
 	 */
-	sigsetmask(sigblock(0) & ~BIT(SIGTSTP));
+	{
+		sigset_t set;
+
+		sigemptyset(&set);
+		sigaddset(&set, SIGTSTP);
+		sigprocmask(SIG_UNBLOCK, &set, NULL);
+	}
 #endif
 	kill(getpid(), SIGTSTP);
 
@@ -106,7 +112,9 @@ sigsetup(void)
 	signal(SIGILL, sigpanic);
 	signal(SIGTRAP, sigpanic);
 	signal(SIGIOT, sigpanic);
+#ifdef SIGEMT
 	signal(SIGEMT, sigpanic);
+#endif
 	signal(SIGFPE, sigpanic);
 	signal(SIGBUS, sigpanic);
 	signal(SIGSEGV, sigpanic);
@@ -128,8 +136,8 @@ sigpanic(int sig)
 	char            buf[128];
 	signal(sig, SIG_DFL);
 	snprintf(buf, sizeof(buf),
-	    "\nLarn - Panic! Signal %d received [SIG%s]", sig,
-	    sys_signame[sig]);
+	    "\nLarn - Panic! Signal %d received [%s]", sig,
+	    strsignal(sig));
 	write(2, buf, strlen(buf));
 	sleep(2);
 	sncbr();

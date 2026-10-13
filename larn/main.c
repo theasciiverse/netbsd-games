@@ -122,6 +122,7 @@ main(int argc, char **argv)
 						 * directory */
 	snprintf(optsfile, sizeof(optsfile), "%s/.larnopts", ptr);
 	/* the .larnopts filename */
+	setpaths();	/* Asciiverse: written files in the data folder */
 
 	/*
 	 *	now malloc the memory for the dungeon

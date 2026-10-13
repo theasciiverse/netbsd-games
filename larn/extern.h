@@ -39,6 +39,7 @@ void act_open_chest(int, int);
 __dead void mailbill(void);
 
 /* config.c */
+void setpaths(void);
 
 /* create.c */
 void makeplayer(void);

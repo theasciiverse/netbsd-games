@@ -36,3 +36,14 @@
 #define	_PATH_HELP		"/usr/share/games/larn/larn.help"
 #define	_PATH_LEVELS		"/usr/share/games/larn/larnmaze"
 #define	_PATH_PLAYERIDS		"/var/games/larn/playerids"
+
+/* Asciiverse: the names of those files in the data folder (setpaths()) */
+#define	_NAME_LOG		"llog12.0"
+#define	_NAME_SCORE		"lscore12.0"
+#define	_NAME_PLAYERIDS		"playerids"
+#define	_NAME_SAVE		"Larn.sav"
+#define	_NAME_CKP		"Larn12.0.ckp"
+#define	_NAME_DIAG		"Diagfile"
+/* and of the files read from the current directory when they are there */
+#define	_NAME_HELP		"larn.help"
+#define	_NAME_LEVELS		"larnmaze"
