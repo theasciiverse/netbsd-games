@@ -23,10 +23,41 @@ BSD Games.
   `asciiverse/package.sh` packs one archive per game from the list in
   `asciiverse/archive/<id>.txt`; `.github/workflows/release.yml` builds
   static Linux in Alpine (x86_64, aarch64) and macOS (x86_64, arm64).
+- `compat/centre.h` and `compat/centre.c` centre the curses games (canfield,
+  cgram, hunt, rogue) in the terminal: New BSD Games' `src/centre.h` (CC0),
+  split so a game of several source files shares one state. `stdscr`
+  becomes a pad, `refresh()` shows its drawn area centred (grown at once,
+  shrunk once the drawing has stayed smaller for two seconds) and a resized
+  terminal re-centres it, also for games that read their keys without
+  `getch()`; `nb_fixed()` centres a field of fixed size whole, however
+  much of it is drawn yet.
 - Nothing is setgid and nothing is written to system folders: each game
   keeps its files in the player's data folder, `bsdgames/<game>` under
   `$XDG_DATA_HOME` (else `~/.local/share`), and reads its shipped files
   from the folder it is started in, where av installs them.
+
+## canfield
+
+- Scores: without the shared score file, the player's betting record is
+  kept in `bsdgames/cfscores` in the data folder (`openuserscores()`).
+  `cfscores`, which lists every user's record on a shared machine, is not
+  built.
+- Centred by `compat/centre.h`; the table is the same size all game.
+- `asciiverse/canfield/LICENSE`: the BSD licence from the source header.
+
+## cgram
+
+- Quotes: with a file named `maxims` in the folder it is started in, each
+  game picks one of its entries at random (`readlocalquote()`) instead of
+  running `fortune`, which the Asciiverse does not install.
+  `asciiverse/cgram/maxims` holds 456 of La Rochefoucauld's maxims in
+  J. Hain Friswell's 1871 translation, public domain, from Project
+  Gutenberg ebook 9105 (`pg9105.txt`, sha256 `1bbcb977...`), the
+  translator's bracketed notes removed.
+- Centred by `compat/centre.h`; the help line is drawn under the text
+  instead of on the terminal's last line, so the two are centred as one
+  block.
+- `asciiverse/cgram/LICENSE`: the BSD licence from the source header.
 
 ## hack
 
@@ -51,6 +82,25 @@ BSD Games.
 - The player's name already came from `$USER` and `$LOGNAME` before the
   login records; unchanged.
 
+## hunt
+
+- Starting the server: `hunt` starts the `huntd` that sits beside it
+  (found through `/proc/self/exe` on Linux and `_NSGetExecutablePath` on
+  macOS, then `./huntd`, then the system path), with its output going
+  nowhere instead of onto the player's screen.
+- Linux: the broadcast search crashed on network interfaces with no
+  address, which Linux lists and NetBSD does not; a server on this machine
+  that answers from two addresses (Debian and Ubuntu map the host name to
+  127.0.1.1) is offered once. `SO_USELOOPBACK` is used only where it
+  exists, `setpgid` replaces BSD `setpgrp`, and the computer player's
+  pause uses `sigprocmask` and `sigsuspend` instead of BSD `sigblock`,
+  `sigpause` and `sigsetmask` (`sigpause` means something else on Linux).
+  `hunt/asciiverse-compat.h` adds `INFTIM` and the headers musl needs.
+- Centred by `compat/centre.h`, the whole 80x24 arena and status
+  (`nb_fixed()`); `hunt` reads its keys itself, so a resize shows at the
+  next refresh.
+- `asciiverse/hunt/LICENSE`: the BSD licence from the source headers.
+
 ## larn
 
 - Build: its Makefile's own defines (`BSD`, `VER=12`, `SUBVER=0`,
@@ -70,6 +120,26 @@ BSD Games.
 - `asciiverse/larn/NOTICE`, in the archive: Larn is copyright 1986 Noah
   Morgan, free by his terms for Larn 12.0 as long as no profit is made,
   so this title is free and never sold.
+
+## rogue
+
+- Build: `-DUNIX` for its machine-dependent code; `<time.h>` and
+  `<fcntl.h>` are always included, and `fpurge` is `__fpurge` from
+  `<stdio_ext.h>` on glibc and musl.
+- Files: the score file, saved games (`rogue.save`, and `rogue.esave` on
+  a hangup) and screen dumps go to `bsdgames/rogue` in the data folder
+  (`md_datafile()`); a name with a slash is used as given, and restoring a
+  bare name looks in the data folder when it is not in the current one.
+  The score file is made at the first lock, so a new install no longer
+  says "cannot lock score file".
+- The player's name comes from `$LOGNAME` or `$USER` before the password
+  database (`md_gln()`).
+- Centred by `compat/centre.h`, the whole 80x24 dungeon, explored or not
+  (`nb_fixed()`); rogue reads its keys itself, so a resize shows at the
+  next refresh.
+- `asciiverse/rogue/NOTICE`, in the archive: besides the BSD licence, the
+  source carries the notice that it "is not to be traded, sold, or used
+  for personal gain or profit", so this title is free and never sold.
 
 ## warp
 
