@@ -78,6 +78,7 @@ yylex(void)
 		}
 		while (ic > flushno);
 
+		av_waitkey();	/* Asciiverse: redraws after a resize */
 		if (read(0, &cc, 1) != 1)
 			return (lastok = -1);
 

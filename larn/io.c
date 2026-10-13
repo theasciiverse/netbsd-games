@@ -74,6 +74,9 @@ __RCSID("$NetBSD: io.c,v 1.32 2026/08/14 09:10:44 andvar Exp $");
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
+#include <poll.h>
+#include <signal.h>
+#include <sys/ioctl.h>
 
 #ifdef TERMIO
 #include <termio.h>
@@ -163,6 +166,34 @@ clearvt100(void)
 	sncbr();		/* system("stty -cbreak echo"); */
 }
 
+#ifndef VT100
+static void     place_field(void);	/* Asciiverse: centring, below */
+static volatile sig_atomic_t av_resized;
+#endif
+
+/*
+ * Asciiverse: wait until a key can be read, drawing the screen again,
+ * centred, after a resize
+ */
+void
+av_waitkey(void)
+{
+#ifndef VT100
+	for (;;) {
+		struct pollfd   pfd = { 0, POLLIN, 0 };
+
+		if (av_resized) {
+			av_resized = 0;
+			place_field();
+			drawscreen();
+			lflush();
+		}
+		if (poll(&pfd, 1, -1) >= 0 || errno != EINTR)
+			break;
+	}
+#endif	/* VT100 */
+}
+
 /*
  *	ttgetch() 	Routine to read in one character from the terminal
  */
@@ -174,7 +205,9 @@ ttgetch(void)
 	c[BYTESIN]++;
 #endif
 	lflush();		/* be sure output buffer is flushed */
-	read(0, &byt, 1);	/* get byte from terminal */
+	av_waitkey();
+	while (read(0, &byt, 1) < 0 && errno == EINTR)
+		continue;	/* get byte from terminal */
 	return (byt);
 }
 
@@ -641,6 +674,34 @@ cursors(void)
  */
 
 static char    *outbuf = 0;     /* translated output buffer */
+
+/*
+ * Asciiverse: on a terminal bigger than larn's 80x24 screen, the screen is
+ * drawn centred, field_x and field_y cells from the top left corner, every
+ * position going through cursor_address (lflush). SIGWINCH sets
+ * av_resized and ttgetch() draws everything again.
+ */
+static int      field_x, field_y;
+
+static void
+place_field(void)
+{
+	struct winsize  ws;
+	int             cols = columns, rows = lines;
+
+	if (ioctl(1, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
+		cols = ws.ws_col;
+		rows = ws.ws_row;
+	}
+	field_x = cols > 80 ? (cols - 80) / 2 : 0;
+	field_y = rows > 24 ? (rows - 24) / 2 : 0;
+}
+
+static void
+on_winch(int sig __unused)
+{
+	av_resized = 1;
+}
 /*
  * init_term()		Terminal initialization -- setup termcap info
  */
@@ -659,6 +720,15 @@ init_term(void)
 	if (!clear_screen) {
 		fprintf(stderr, "term does not have clear_screen.\n");
 		exit(1);
+	}
+	place_field();
+	{
+		struct sigaction sa;
+
+		memset(&sa, 0, sizeof sa);
+		sa.sa_handler = on_winch;
+		sa.sa_flags = SA_RESTART;
+		sigaction(SIGWINCH, &sa, NULL);
 	}
 	if ((outbuf = malloc(BUFBIG + 16)) == 0) {      /* get memory for
 							 * decoded output buffer */
@@ -797,6 +867,9 @@ lflush(void)
 				case CLEAR:
 					tputs(clear_screen, 0, ttputch);
 					curx = cury = 0;
+					if (field_x || field_y)
+						tputs(tiparm(cursor_address,
+						    field_y, field_x), 0, ttputch);
 					break;
 
 				case CL_LINE:
@@ -819,7 +892,8 @@ lflush(void)
 					curx = *++str - 1;
 					cury = *++str - 1;
 					tputs(tiparm(cursor_address,
-						    cury, curx), 0, ttputch);
+						    cury + field_y, curx + field_x),
+					    0, ttputch);
 					break;
 
 				case '\n':
@@ -834,7 +908,8 @@ lflush(void)
 								scrline = 19;
 							tputs(tiparm(
 							    cursor_address,
-							    scrline, 0),
+							    scrline + field_y,
+							    field_x),
 							    0, ttputch);
 							tputs(clr_eol, 0,
 							    ttputch);
@@ -843,26 +918,35 @@ lflush(void)
 								scrline = 23;
 							tputs(tiparm(
 							    cursor_address,
-							    scrline, 0),
+							    scrline + field_y,
+							    field_x),
 							    0, ttputch);
 							tputs(clr_eol, 0,
 							    ttputch);
 						} else {
 							tputs(tiparm(
 							    cursor_address,
-							    19, 0),
+							    19 + field_y,
+							    field_x),
 							    0, ttputch);
 							tputs(delete_line, 0,
 							    ttputch);
 							tputs(tiparm(
 							    cursor_address,
-							    23, 0),
+							    23 + field_y,
+							    field_x),
 							    0, ttputch);
 							/*
 							 * tputs (AL, 0,
 							 * ttputch);
 							 */
 						}
+					} else if (field_x || field_y) {
+						/* a new line starts at the field */
+						cury++;
+						tputs(tiparm(cursor_address,
+						    cury + field_y, field_x),
+						    0, ttputch);
 					} else {
 						ttputch('\n');
 						cury++;

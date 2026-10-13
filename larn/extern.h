@@ -65,6 +65,7 @@ void bot_linex(void);
 void bottomgold(void);
 void draws(int, int, int, int);
 void drawscreen(void);
+void av_waitkey(void);
 void showcell(int, int);
 void show1cell(int, int);
 void showplayer(void);

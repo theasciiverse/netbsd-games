@@ -93,8 +93,14 @@ main(int argc, char **argv)
 	init_term();		/* setup the terminal (find out what type)
 				 * for termcap */
 #endif	/* VT100 */
-	/* try to get login name */
-	if (((ptr = getlogin()) == 0) || (*ptr == 0)) {
+	/*
+	 * try to get login name; Asciiverse: $USER and $LOGNAME first, so the
+	 * name the player's environment gives (av's previews use "player")
+	 * wins over the system's login records
+	 */
+	if (((ptr = getenv("USER")) == 0 || *ptr == 0) &&
+	    ((ptr = getenv("LOGNAME")) == 0 || *ptr == 0) &&
+	    ((ptr = getlogin()) == 0 || *ptr == 0)) {
 		/* can we get it from /etc/passwd? */
 		if ((pwe = getpwuid(getuid())) != NULL)
 			ptr = pwe->pw_name;
