@@ -318,7 +318,10 @@ top:
 			}
 			if (nxtbang && bangm[nxtbang-1] < 0)
 			    --nxtbang;	/* consolidate zaps */
-			make_blast(evely*2+ent->posy,evelx*2+ent->posx,
+			/* Asciiverse: wrapped, as everywhere else; near an
+			 * edge this ran off the universe */
+			make_blast((evely*2+ent->posy+YSIZE00)%YSIZE,
+			    (evelx*2+ent->posx+XSIZE00)%XSIZE,
 			    -5000000L, 3*numzaps);
 			ent->energy /= 2;
 		    }
@@ -330,7 +333,8 @@ top:
 			    damflag[NODESTRUCT] = rand_mod(smarts+10)+2;
 			}
 			if (++numdestructs <= 2)
-			    make_blast(evely*2+ent->posy,evelx*2+ent->posx,
+			    make_blast((evely*2+ent->posy+YSIZE00)%YSIZE,
+				(evelx*2+ent->posx+XSIZE00)%XSIZE,
 				15000L, 3);
 			ent->energy /= 4;
 		    }

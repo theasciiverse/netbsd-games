@@ -296,8 +296,11 @@ main(int argc, char *argv[])
     tcbuf = malloc(1024);
     intrp_init(tcbuf);
 
-    if (chdir(warplib) < 0)
-	fprintf(stderr,NOCD,warplib);
+    if (chdir(savedir) < 0)
+	fprintf(stderr,NOCD,savedir);
+    else
+	close(open(LOGFILE, O_WRONLY | O_CREAT | O_APPEND, 0644));
+	/* Asciiverse: the log must exist, score() locks by linking to it */
 
     term_init();
 

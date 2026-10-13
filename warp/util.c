@@ -23,6 +23,20 @@
 
 struct timespec timebuf;
 
+/* Asciiverse: a file to read from the current directory (the player's
+ * data folder), else from warplib, where the shipped files are */
+FILE *
+datafopen(const char *name)
+{
+    FILE *fp = fopen(name,"r");
+
+    if (fp == NULL && *name != '/') {
+	snprintf(buf, sizeof buf, "%s/%s", warplib, name);
+	fp = fopen(buf,"r");
+    }
+    return fp;
+}
+
 void
 util_init(void)
 {

@@ -86,7 +86,7 @@ EXT char filler[];
 
 EXT char *bsptr INIT(filler+1);
 
-EXT char term[12];
+EXT char term[64];	/* Asciiverse: was 12, too short for /dev/pts/100 */
 
 EXT char gfillen INIT(25);
 

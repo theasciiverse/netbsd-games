@@ -206,7 +206,7 @@ stars_again:
 	dist = 0;
 	snprintf(spbuf, sizeof(spbuf), "smap.%d",
 	    (prescene>=0?prescene:rand_mod(MAPS)) );
-	if ((mapfp = fopen(spbuf,"r")) != NULL &&
+	if ((mapfp = datafopen(spbuf)) != NULL &&
 	    fgets(spbuf,10,mapfp) != NULL ) {
 	    inumstars = numstars = atoi(spbuf);
 	    if (inumenemies+inumstars > YSIZE*XSIZE-20)

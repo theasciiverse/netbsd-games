@@ -39,10 +39,6 @@ score_init(void)
 	printf("Cannot access %s\r\n",SAVEDIR);
 	finalize(1);
     }
-    if (filestat.st_gid != getegid() && geteuid() != 0) {
-	printf("Warp will not run right without being setgid.\r\n");
-	finalize(1);
-    }
     if ((filestat.st_mode & 0605) != 0605) {
 	printf("%s is not protected correctly (must be u+rw o+rx).\r\n",SAVEDIR);
 	finalize(1);
@@ -239,7 +235,7 @@ wscore(void)
     printf("          GAMES SAVED OR IN PROGRESS\r\n\n");
     printf("WHO           SCORE  DF   CDF  E  B  WV  FLAGS\r\n");
     resetty();
-    snprintf(spbuf, sizeof(spbuf), "/bin/cat %ssave.*",SAVEDIR);
+    snprintf(spbuf, sizeof(spbuf), "/bin/cat %s/save.*",SAVEDIR);
     execl("/bin/sh", "sh", "-c", spbuf, NULL);
     finalize(1);
 }

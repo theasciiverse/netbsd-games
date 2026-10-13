@@ -43,7 +43,10 @@
  * access.)
  */
 
-#define SAVEDIR "/var/games/warp"
+/* Asciiverse: games, scores and the half-gone universes are kept in the
+ * player's data folder (savedir, set in intrp_init), the shipped files are
+ * read from warplib */
+#define SAVEDIR savedir
 #define NEWSFILE "warp.news"
 #define HELPFILE "warp.doc"
 #define LOCKFILE ".warp.lock"
@@ -64,6 +67,7 @@
 #endif
 
 EXT char *warplib;
+EXT char *savedir;
 
 #define PERMMAPS 8	/* how many starmaps are permanent */
 #define MAPS 20		/* how many starmaps to choose from */

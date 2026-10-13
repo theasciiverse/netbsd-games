@@ -76,7 +76,33 @@ intrp_init(char *tcbuf)
 	strcat(hname,MYDOMAIN);
 	hostname=savestr(hname);
     }
-    warplib = savestr(filexp(WARPLIB));
+    /* Asciiverse: the shipped files next to the game, when started there */
+    if (access("smap.0", R_OK) == 0 && getcwd(buf, sizeof buf) != NULL)
+	warplib = savestr(buf);
+    else
+	warplib = savestr(filexp(WARPLIB));
+
+    /* Asciiverse: the player's data folder, $XDG_DATA_HOME/bsdgames/warp */
+    {
+	const char *base = getenv("XDG_DATA_HOME");
+	char *p;
+
+	if (base != NULL && *base)
+	    snprintf(buf, sizeof buf, "%s/bsdgames/warp", base);
+	else if (homedir != NULL)
+	    snprintf(buf, sizeof buf, "%s/.local/share/bsdgames/warp",
+		homedir);
+	else
+	    strcpy(buf, ".");
+	for (p = buf + 1; *p; p++)
+	    if (*p == '/') {
+		*p = '\0';
+		mkdir(buf, 0755);
+		*p = '/';
+	    }
+	mkdir(buf, 0755);
+	savedir = savestr(buf);
+    }
 
     if (scorespec)			/* that getwd below takes ~1/3 sec. */
 	return;				/* and we do not need it for -s */

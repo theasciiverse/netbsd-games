@@ -391,7 +391,7 @@ page(const char *filename, size_t num)
 {
     int linenum = 1;
 
-    tmpfp = fopen(filename,"r");
+    tmpfp = datafopen(filename);
     if (tmpfp != NULL) {
 	while (fgets(spbuf,(sizeof spbuf),tmpfp) != NULL) {
 	    if (*spbuf == '\f') {

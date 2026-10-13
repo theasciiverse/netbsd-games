@@ -17,8 +17,11 @@ object_init(void)
     ;
 }
 
+/* Asciiverse: every caller passes y before x, as in the original; the
+ * parameters were named the other way round, so objects were placed
+ * transposed, past the end of occupant[][] */
 OBJECT *
-make_object(char typ, char img, int px, int py, int vx, int vy, long energ,
+make_object(char typ, char img, int py, int px, int vy, int vx, long energ,
     long mas, OBJECT *where)
 {
     OBJECT *obj;

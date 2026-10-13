@@ -36,6 +36,7 @@ EXT int len_last_line_got INIT(0);
 #endif
 
 void util_init(void);
+FILE *datafopen(const char *);
 void movc3(int, char *, char *);
 __dead void no_can_do(const char *);
 int exdis(int);

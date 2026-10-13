@@ -31,8 +31,10 @@ bang_init(void)
     ;
 }
 
+/* Asciiverse: like make_object, these take y before x, as every caller
+ * passes them, and make_blast the mass before the size */
 void
-make_plink(int x, int y)
+make_plink(int y, int x)
 {
     OBJECT *obj;
 
@@ -55,7 +57,7 @@ make_plink(int x, int y)
 }
 
 void
-make_blast(int x, int y, int size, long mass)
+make_blast(int y, int x, long mass, int size)
 {
     bangy[nxtbang] = y;
     bangx[nxtbang] = x;
