@@ -12,7 +12,9 @@ asciiverse/build.sh (which puts the binaries in out/), with pyte installed:
 The game runs by name from out/ on PATH, so the cast's header holds no
 local path; scores go to a throwaway home folder under the name "player".
 A game that reads files from its install folder (hangman's word list)
-passes cwd=, the folder av would start it in.
+passes cwd=, the folder av would start it in; command= replaces the
+command line (a short shell line, still without paths) and env= adds
+variables, such as a player name the game reads from its environment.
 
 curses draws boxes in the DEC line-drawing set, which pyte keeps as the
 plain letters (q is a horizontal line, x a vertical one, l k m j corners).
@@ -38,9 +40,30 @@ def _repeat_last(self, n=1, *rest, **kw):
         _draw(self, self.last_char * max(1, n))
 
 
+# Nor SU and SD (CSI n S and CSI n T, scroll the lines between the margins
+# up or down), which ncurses may use to scroll; as in MyMan's rec.py.
+def _scroll(self, n, up):
+    top, bottom = self.margins or pyte.screens.Margins(0, self.lines - 1)
+    y = self.cursor.y
+    for _ in range(max(1, n)):
+        self.cursor.y = bottom if up else top
+        self.index() if up else self.reverse_index()
+    self.cursor.y = y
+
+
+def _scroll_up(self, n=1, *rest, **kw):
+    _scroll(self, n, True)
+
+
+def _scroll_down(self, n=1, *rest, **kw):
+    _scroll(self, n, False)
+
+
 pyte.Screen.draw = _draw_remembering
 pyte.Screen.repeat_last = _repeat_last
-pyte.Stream.csi = dict(pyte.Stream.csi, b="repeat_last")
+pyte.Screen.scroll_up = _scroll_up
+pyte.Screen.scroll_down = _scroll_down
+pyte.Stream.csi = dict(pyte.Stream.csi, b="repeat_last", S="scroll_up", T="scroll_down")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,7 +73,7 @@ ENTER, ESC = b"\r", b"\x1b"
 
 
 class Rec:
-    def __init__(self, id, title, args=(), cols=100, rows=30, cwd=None):
+    def __init__(self, id, title, args=(), cols=100, rows=30, cwd=None, command=None, env=None):
         self.home = tempfile.mkdtemp(prefix="netbsd-rec-")
         out = os.path.join(ROOT, "out")
         env = {
@@ -62,8 +85,9 @@ class Rec:
             "TERM": "xterm-256color",
             "COLORTERM": "truecolor",
             "LANG": "C.UTF-8",
+            **(env or {}),
         }
-        cmd = " ".join([id, *args])
+        cmd = command or " ".join([id, *args])
         cast = os.path.join(ROOT, "asciiverse", "casts", f"{id}.cast")
         self.screen = pyte.Screen(cols, rows)
         self.stream = pyte.ByteStream(self.screen)
