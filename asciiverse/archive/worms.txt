@@ -1,0 +1,4 @@
+# worms, man page, licence (from the source header)
+out/worms
+worms/worms.6
+asciiverse/worms/LICENSE

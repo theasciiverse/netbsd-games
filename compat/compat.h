@@ -42,6 +42,9 @@
 #ifndef __UNCONST
 #define __UNCONST(a) ((void *)(unsigned long)(const void *)(a))
 #endif
+#ifndef __CTASSERT
+#define __CTASSERT(x) _Static_assert(x, #x)
+#endif
 #ifndef __unreachable
 #define __unreachable() __builtin_unreachable()
 #endif

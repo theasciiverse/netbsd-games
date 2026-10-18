@@ -1,4 +1,5 @@
-# Builds the NetBSD games for the Asciiverse catalog: every game with a list
+# Builds the NetBSD games (and the screen pieces rain and worms) for the
+# Asciiverse catalog: every title with a list
 # in asciiverse/archive/ is its own catalog title, so each gets its own
 # archive per target, named <id>-<target>.tar.gz, plus one SHA256SUMS file
 # for all of them, attached to a GitHub release (hub/catalog/SCHEMA.md,
@@ -103,5 +104,5 @@ jobs:
         run: |
           gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "NetBSD games $TAG" \
-                 --notes "canfield, cgram, hack, hunt, larn, rogue and warp $TAG, from NetBSD's src/games, built for the Asciiverse catalog: one archive per game and target."
+                 --notes "canfield, cgram, hack, hunt, larn, rogue and warp, and the screen pieces rain and worms, $TAG, from NetBSD's src/games, built for the Asciiverse catalog: one archive per game and target."
           gh release upload "$TAG" dist/* -R "$GITHUB_REPOSITORY" --clobber

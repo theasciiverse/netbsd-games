@@ -57,6 +57,7 @@ __RCSID("$NetBSD: rain.c,v 1.24 2024/02/28 23:24:52 charlotte Exp $");
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 
 static volatile sig_atomic_t sig_caught = 0;
 static long cols;
@@ -97,6 +98,15 @@ main(int argc, char **argv)
 
 	if (!initscr())
 		errx(0, "couldn't initialize screen");
+	/*
+	 * Asciiverse: keys are read without waiting, so any key quits and a
+	 * resize arrives as KEY_RESIZE; a new seed every run.
+	 */
+	(void)cbreak();
+	(void)noecho();
+	(void)nodelay(stdscr, TRUE);
+	(void)keypad(stdscr, TRUE);
+	srandom((unsigned int)time(NULL) ^ ((unsigned int)getpid() << 16));
 	winupdate();
 
 	(void)signal(SIGHUP, onsig);
@@ -113,9 +123,19 @@ main(int argc, char **argv)
 			(void)endwin();
 			exit(0);
 		}
-		if (is_term_resized(LINES, COLS)) {
-			resizeterm(LINES, COLS);
+		while ((ch = getch()) != ERR) {
+			if (ch != KEY_RESIZE) {
+				(void)endwin();
+				exit(0);
+			}
+			/* a resize: start over on the new screen */
 			winupdate();
+			(void)clear();
+			for (j = 4; j >= 0; --j) {
+				xpos[j] = random() % cols + 2;
+				ypos[j] = random() % lines + 2;
+			}
+			j = 0;
 		}
 		x = random() % cols + 2;
 		y = random() % lines + 2;
@@ -155,8 +175,9 @@ winupdate(void)
 {
 	cols = COLS - 4;
 	lines = LINES - 4;
-	if (cols == 0) cols++;
-	if (lines == 0) lines++;
+	/* Asciiverse: below 5x5 these went negative or 0 */
+	if (cols < 1) cols = 1;
+	if (lines < 1) lines = 1;
 }
 
 /* ARGSUSED */

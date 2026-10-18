@@ -72,6 +72,7 @@ __RCSID("$NetBSD: worms.c,v 1.31 2023/05/12 13:29:41 kre Exp $");
 #include <stdlib.h>
 #include <strings.h>
 #include <term.h>
+#include <time.h>
 #include <unistd.h>
 
 static const struct options {
@@ -189,9 +190,14 @@ static struct	worm {
 	short *xpos, *ypos;
 	chtype ch, eye, attr;
 } *worm;
+static int nworms;		/* Asciiverse: worms allocated by arena() */
+static short **ref;
 
 static volatile sig_atomic_t sig_caught;
 
+static int arena(int, int, int, int, int, int, const int *,
+    const char *);
+static unsigned int av_seed(void);
 static int initclr(int**);
 static void nomem(void) __dead;
 static void onsig(int);
@@ -200,14 +206,12 @@ static int worm_length(int, int);
 int
 main(int argc, char *argv[])
 {
-	int CO, LI, last, bottom, ch, number, trail;
+	int CO, LI, last, bottom, ch, number, reqnumber, trail;
 	int x, y, h, n, nc;
 	int maxlength, minlength;
 	unsigned int seed, delay;
 	const struct options *op;
 	struct worm *w;
-	short **ref;
-	short *ip;
 	const char *field;
 	char *ep;
 	unsigned long ul, up;
@@ -218,7 +222,7 @@ main(int argc, char *argv[])
 
 	delay = 20000;
 	maxlength = minlength = 16;
-	number = 3;
+	reqnumber = 3;
 	seed = 0;
 	trail = ' ';
 	field = NULL;
@@ -338,7 +342,7 @@ main(int argc, char *argv[])
 				    optarg);
 			}
 			/* upper bound is further limited later */
-			number = (int)ul;
+			reqnumber = (int)ul;
 			continue;
 		case 'r':
 			minlength = 5;
@@ -375,24 +379,144 @@ main(int argc, char *argv[])
 		errx(1, "couldn't initialize screen");
 	curs_set(0);
 	nc = docolour ? initclr(&ctab) : 0;
-	CO = COLS;
-	LI = LINES;
-
-	if (CO == 0 || LI == 0) {
-		endwin();
-		errx(1, "screen must be a rectangle, not (%dx%d)", CO, LI);
-	}
-
 	/*
-	 * The "sizeof(short *)" noise is to abslutely guarantee
-	 * that a LI * CO * sizeof(short *) cannot overflow an int
+	 * Asciiverse: keys are read without waiting, so any key quits, and a
+	 * resize arrives as KEY_RESIZE and starts the worms over on the new
+	 * screen (upstream quit on SIGWINCH). The arena is set up by arena(),
+	 * once per screen size.
 	 */
-	if (CO >= (int)(INT_MAX / (2 * sizeof(short *)) / LI)) {
-		endwin();
-		errx(1, "screen (%dx%d) too large for worms", CO, LI);
-	}
+	cbreak();
+	noecho();
+	nodelay(stdscr, TRUE);
+	keypad(stdscr, TRUE);
 
-	/* now known that LI*CO cannot overflow an int => also not a long */
+	srandom(seed ? seed : av_seed());
+
+	(void)signal(SIGHUP, onsig);
+	(void)signal(SIGINT, onsig);
+	(void)signal(SIGQUIT, onsig);
+	(void)signal(SIGTERM, onsig);
+	(void)signal(SIGTSTP, onsig);
+
+	for (;;) {
+		CO = COLS;
+		LI = LINES;
+		erase();
+		number = arena(CO, LI, reqnumber, minlength, maxlength, nc,
+		    ctab, field);
+		last = CO - 1;
+		bottom = LI - 1;
+
+		for (;;) {
+			refresh();
+			if (sig_caught) {
+				endwin();
+				exit(0);
+			}
+			if ((ch = getch()) == KEY_RESIZE)
+				break;
+			if (ch != ERR) {
+				endwin();
+				exit(0);
+			}
+			if (number == 0) {
+				/* too small for worms: wait for a resize */
+				usleep(50000);
+				continue;
+			}
+			if (delay) {
+				if (delay % 1000000 != 0)
+					usleep(delay % 1000000);
+				if (delay >= 1000000)
+					sleep(delay / 1000000);
+			}
+			for (n = 0, w = &worm[0]; n < number; n++, w++) {
+				chtype c = docaput ? w->eye : w->ch;
+
+				if ((x = w->xpos[h = w->head]) < 0) {
+					mvaddch(y = w->ypos[h] = bottom,
+						x = w->xpos[h] = 0, c | w->attr);
+					ref[y][x]++;
+				} else
+					y = w->ypos[h];
+				if (++h == w->len)
+					h = 0;
+				if (w->xpos[w->head = h] >= 0) {
+					int x1, y1;
+
+					x1 = w->xpos[h];
+					y1 = w->ypos[h];
+					if (--ref[y1][x1] == 0)
+						mvaddch(y1, x1, trail);
+				}
+
+				op = &(!x
+					? (!y
+					    ? upleft
+					    : (y == bottom ? lowleft : left))
+					: (x == last
+					    ? (!y ? upright
+						  : (y == bottom ? lowright : right))
+					    : (!y ? upper
+						  : (y == bottom ? lower : normal)))
+				      )[w->orientation];
+
+				switch (op->nopts) {
+				case 0:
+					endwin();
+					abort();
+					/* NOTREACHED */
+				case 1:
+					w->orientation = op->opts[0];
+					break;
+				default:
+					w->orientation =
+					    op->opts[(int)random() % op->nopts];
+				}
+				mvaddch(y += yinc[w->orientation],
+					x += xinc[w->orientation],
+					c | w->attr);
+				ref[w->ypos[h] = y][w->xpos[h] = x]++;
+				if (docaput && w->len > 1) {
+					int prev = (h ? h : w->len) - 1;
+
+					mvaddch(w->ypos[prev], w->xpos[prev],
+						w->ch | w->attr);
+				}
+			}
+		}
+	}
+}
+
+/*
+ * Asciiverse: the screen-size part of upstream's main(), run again after
+ * every resize. Returns the number of worms set up: the number asked for,
+ * fewer when the screen holds fewer (upstream stopped with an error, also
+ * for worms too long for the screen, which are now shortened), and 0 on a
+ * screen too small for worms (upstream: an error), which shows nothing
+ * until it is made bigger.
+ */
+static int
+arena(int CO, int LI, int number, int minlength, int maxlength, int nc,
+    const int *ctab, const char *field)
+{
+	static short *grid;
+	struct worm *w;
+	unsigned long ul;
+	short *ip;
+	int n, x, y;
+
+	for (n = 0; n < nworms; n++) {
+		free(worm[n].xpos);
+		free(worm[n].ypos);
+	}
+	free(worm);
+	free(grid);
+	free(ref);
+	worm = NULL;
+	grid = NULL;
+	ref = NULL;
+	nworms = 0;
 
 	if (LI < 3 || CO < 3 || LI * CO < 40) {
 		/*
@@ -400,19 +524,26 @@ main(int argc, char *argv[])
 		 * Need at least 40 spaces so we can have (n > 1) worms
 		 * of a reasonable length, and still leave empty space.
 		 */
-		endwin();
-		errx(1, "screen (%dx%d) too small for worms", CO, LI);
+		return 0;
 	}
+
+	/*
+	 * The "sizeof(short *)" noise is to abslutely guarantee
+	 * that a LI * CO * sizeof(short *) cannot overflow an int
+	 */
+	if (CO >= (int)(INT_MAX / (2 * sizeof(short *)) / LI))
+		return 0;
+
+	/* now known that LI*CO cannot overflow an int => also not a long */
 
 	if (maxlength == 0)
 		maxlength = minlength + (CO * LI / 40);
 
 	ul = (unsigned long)CO * LI;
-	if ((unsigned long)maxlength > ul / 20) {
-		endwin();
-		errx(1, "-l: worms too long (%d) for screen; max: %lu",
-		    maxlength, ul / 20);
-	}
+	if ((unsigned long)maxlength > ul / 20)
+		maxlength = (int)(ul / 20);
+	if (minlength > maxlength)
+		minlength = maxlength;
 
 	ul /= maxlength * 3;	/* no more than 33% arena occupancy */
 
@@ -420,22 +551,16 @@ main(int argc, char *argv[])
 		maxlength = CO * LI / 3 / number;
 		if (maxlength < minlength)
 			maxlength = minlength;
-		ul = (CO * LI) / ((minlength + maxlength)/2 * 3);;
+		ul = (CO * LI) / ((minlength + maxlength)/2 * 3);
 	}
 
-	if ((unsigned long)(unsigned)number > ul) {
-		endwin();
-		errx(1, "-n: too many worms (%d) max: %lu", number, ul);
-	}
+	if ((unsigned long)(unsigned)number > ul)
+		number = ul > 0 ? (int)ul : 1;
 	if (!(worm = calloc((size_t)number, sizeof(struct worm))))
 		nomem();
+	nworms = number;
 
-	srandom(seed ? seed : arc4random());
-
-	last = CO - 1;
-	bottom = LI - 1;
-
-	if (!(ip = calloc(LI * CO, sizeof(short))))
+	if (!(grid = ip = calloc(LI * CO, sizeof(short))))
 		nomem();
 	if (!(ref = malloc((size_t)LI * sizeof(short *))))
 		nomem();
@@ -465,18 +590,11 @@ main(int argc, char *argv[])
 		for (y = w->len; --y >= 0;)
 			*ip++ = -1;
 	}
-	free(ctab);		/* not needed any more */
-
-	(void)signal(SIGHUP, onsig);
-	(void)signal(SIGINT, onsig);
-	(void)signal(SIGQUIT, onsig);
-	(void)signal(SIGTERM, onsig);
-	(void)signal(SIGTSTP, onsig);
-	(void)signal(SIGWINCH, onsig);
 
 	if (field) {
 		const char *p = field;
 
+		move(0, 0);
 		for (y = LI; --y >= 0;) {
 			for (x = CO; --x >= 0;) {
 				addch(*p++);
@@ -485,74 +603,7 @@ main(int argc, char *argv[])
 			}
 		}
 	}
-
-	for (;;) {
-		refresh();
-		if (sig_caught) {
-			endwin();
-			exit(0);
-		}
-		if (delay) {
-			if (delay % 1000000 != 0)
-				usleep(delay % 1000000);
-			if (delay >= 1000000)
-				sleep(delay / 1000000);
-		}
-		for (n = 0, w = &worm[0]; n < number; n++, w++) {
-			chtype c = docaput ? w->eye : w->ch;
-
-			if ((x = w->xpos[h = w->head]) < 0) {
-				mvaddch(y = w->ypos[h] = bottom,
-					x = w->xpos[h] = 0, c | w->attr);
-				ref[y][x]++;
-			} else
-				y = w->ypos[h];
-			if (++h == w->len)
-				h = 0;
-			if (w->xpos[w->head = h] >= 0) {
-				int x1, y1;
-
-				x1 = w->xpos[h];
-				y1 = w->ypos[h];
-				if (--ref[y1][x1] == 0)
-					mvaddch(y1, x1, trail);
-			}
-
-			op = &(!x
-				? (!y
-				    ? upleft
-				    : (y == bottom ? lowleft : left))
-				: (x == last
-				    ? (!y ? upright
-					  : (y == bottom ? lowright : right))
-				    : (!y ? upper
-					  : (y == bottom ? lower : normal)))
-			      )[w->orientation];
-
-			switch (op->nopts) {
-			case 0:
-				endwin();
-				abort();
-				/* NOTREACHED */
-			case 1:
-				w->orientation = op->opts[0];
-				break;
-			default:
-				w->orientation =
-				    op->opts[(int)random() % op->nopts];
-			}
-			mvaddch(y += yinc[w->orientation],
-				x += xinc[w->orientation],
-				c | w->attr);
-			ref[w->ypos[h] = y][w->xpos[h] = x]++;
-			if (docaput && w->len > 1) {
-				int prev = (h ? h : w->len) - 1;
-
-				mvaddch(w->ypos[prev], w->xpos[prev],
-					w->ch | w->attr);
-			}
-		}
-	}
+	return number;
 }
 
 static int
@@ -616,6 +667,17 @@ worm_length(int low, int high)
 		return low;
 
 	return low + (random() % (high - low + 1));
+}
+
+/* Asciiverse: a seed for every run; musl has no arc4random() */
+static unsigned int
+av_seed(void)
+{
+#if defined(__GLIBC__) || defined(__APPLE__) || defined(__NetBSD__)
+	return arc4random();
+#else
+	return (unsigned int)time(NULL) ^ ((unsigned int)getpid() << 16);
+#endif
 }
 
 static void

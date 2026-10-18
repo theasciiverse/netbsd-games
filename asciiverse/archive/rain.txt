@@ -1,0 +1,4 @@
+# rain, man page, licence (from the source header)
+out/rain
+rain/rain.6
+asciiverse/rain/LICENSE

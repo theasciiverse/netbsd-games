@@ -5,8 +5,11 @@ bsd-games (packaged in `theasciiverse/bsdgames`) dropped: canfield, cgram,
 hack, hunt, larn, rogue and warp, from NetBSD's own source tree. The first
 commit imports NetBSD's `src/games` folders for them unchanged, at
 NetBSD commit `1fc61a5c45cdd2a67b7e1b272c41a67aa200f621` (2026-10-13,
-tag `netbsd-1fc61a5`); phantasia came along and is not built. Everything
-after it is ours.
+tag `netbsd-1fc61a5`); phantasia came along and is not built. A later
+commit imports `rain` and `worms`, Eric P. Scott's screen pieces from
+Caltech (1980), unchanged from the same NetBSD commit; they are Art &
+Demos titles (kind `art`) in the catalog. Everything after the two
+imports is ours.
 
 In the Asciiverse catalog each game is its own title, credited as part of
 BSD Games.
@@ -23,6 +26,7 @@ BSD Games.
   `asciiverse/package.sh` packs one archive per game from the list in
   `asciiverse/archive/<id>.txt`; `.github/workflows/release.yml` builds
   static Linux in Alpine (x86_64, aarch64) and macOS (x86_64, arm64).
+- `compat.h` also gives `__CTASSERT` (a `_Static_assert`), for worms.
 - `compat/centre.h` and `compat/centre.c` centre the curses games (canfield,
   cgram, hunt, rogue) in the terminal: New BSD Games' `src/centre.h` (CC0),
   split so a game of several source files shares one state. `stdscr`
@@ -191,3 +195,36 @@ BSD Games.
   the instructions question before the game are plain text at the left.
 - The scoreboard's name comes from `$NAME` first, as rn does, then the
   full name in the user database, then the login name.
+
+## rain
+
+- Any key quits, q among them (upstream: only a signal, such as Ctrl+C,
+  which still works): curses reads keys without waiting between drops.
+- A resize clears the screen and starts the drops over inside the new
+  size. Upstream's own check, `is_term_resized(LINES, COLS)`, compares
+  the size with itself under ncurses (which keeps `LINES` and `COLS` in
+  step with the screen) and never fires; the resize now comes in as
+  `KEY_RESIZE`. Below 4 lines or columns the drop area went negative,
+  which upstream's check for 0 missed; it is now at least 1.
+- A new seed every run (`srandom()` from the time and process id);
+  upstream never seeded, so every run rained the same.
+- Not centred: it draws over the whole terminal.
+- `asciiverse/rain/LICENSE`: the BSD licence from the source header.
+
+## worms
+
+- Any key quits, q among them (upstream: only a signal); Ctrl+C and the
+  other signals still do.
+- A resize starts the worms over on the new screen (upstream quit on
+  `SIGWINCH`): the size-dependent half of `main()` is now `arena()`, run
+  again after each `KEY_RESIZE`, freeing the old worms and grid.
+- Sizes are fitted instead of refused, since the screen can change under
+  it: more worms than fit (`-n`) are cut to the number that fits and worms
+  too long for the screen (`-l`) are shortened, where upstream stopped
+  with an error; a screen too small for worms (under 3 lines or columns,
+  or under 40 cells) shows nothing until it is made bigger instead of
+  exiting.
+- The seed: `arc4random()` where libc has it (glibc, macOS), else the
+  time and process id (musl has none).
+- Not centred: it draws over the whole terminal.
+- `asciiverse/worms/LICENSE`: the BSD licence from the source header.
