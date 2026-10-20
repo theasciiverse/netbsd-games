@@ -8,8 +8,11 @@ NetBSD commit `1fc61a5c45cdd2a67b7e1b272c41a67aa200f621` (2026-10-13,
 tag `netbsd-1fc61a5`); phantasia came along and is not built. A later
 commit imports `rain` and `worms`, Eric P. Scott's screen pieces from
 Caltech (1980), unchanged from the same NetBSD commit; they are Art &
-Demos titles (kind `art`) in the catalog. Everything after the two
-imports is ours.
+Demos titles (kind `art`) in the catalog. A third imports `backgammon`
+(Alan Char, 1980) with its rules and tutorial, `teachgammon`, unchanged
+from the same commit (all 29 files checked against its tree), which
+Sharov's bsd-games had dropped in favour of GNU Backgammon. Everything
+after the imports is ours.
 
 In the Asciiverse catalog each game is its own title, credited as part of
 BSD Games.
@@ -26,7 +29,8 @@ BSD Games.
   `asciiverse/package.sh` packs one archive per game from the list in
   `asciiverse/archive/<id>.txt`; `.github/workflows/release.yml` builds
   static Linux in Alpine (x86_64, aarch64) and macOS (x86_64, arm64).
-- `compat.h` also gives `__CTASSERT` (a `_Static_assert`), for worms.
+- `compat.h` also gives `__CTASSERT` (a `_Static_assert`), for worms,
+  and maps BSD's `OXTABS` termios flag to Linux's `XTABS`, for backgammon.
 - `compat/centre.h` and `compat/centre.c` centre the curses games (canfield,
   cgram, hunt, rogue) in the terminal: New BSD Games' `src/centre.h` (CC0),
   split so a game of several source files shares one state. `stdscr`
@@ -228,3 +232,53 @@ BSD Games.
   time and process id (musl has none).
 - Not centred: it draws over the whole terminal.
 - `asciiverse/worms/LICENSE`: the BSD licence from the source header.
+
+## backgammon
+
+backgammon and teachgammon (the rules and a tutorial game) are one title,
+`backgammon`, shipped together.
+
+- **Found beside each other.** backgammon starts teachgammon when the
+  player asks for the rules, and teachgammon starts backgammon after the
+  tutorial; both looked in `/usr/games`. Each now finds the other in the
+  folder it was started from (`/proc/self/exe`, `_NSGetExecutablePath`),
+  else the old path (`common_source/asciiverse.c`, `sibling()`).
+- **Saved games in the data folder.** A game saved under a bare name goes
+  in `bsdgames/backgammon` in the player's data folder and is recovered
+  from there (`backgammon <name>` or `-s <name>`); a name with a `/` is
+  used as it is. The save name was typed into a 50-byte buffer with no
+  limit, so a long name overflowed it; it now stops at 49 characters.
+- **Centred.** The game draws through its own cursor code (`fancy.c`), not
+  curses, from the terminal's top left corner. Its 80x24 screen is now
+  centred in a bigger terminal: direct cursor motion adds the offset, the
+  moves that start from the terminal's own corner (home, carriage return)
+  are not used when the screen is offset, and a cleared screen moves to
+  the screen's corner. The real window size is read over the terminal
+  type's. A resize interrupts the key read and redraws the board in the
+  new place, as Ctrl+L does. teachgammon is centred the same way.
+- **The computer checks the right squares for a hit.** `canhit()`
+  (`odds.c`) judges whether a blot on point `i` can be hit by a man on `j`
+  with a combination of dice. It checked the squares `k` and `diff - k`
+  beyond `i`, away from `j`, instead of the squares the man lands on
+  first, short of `i`; near either end of the board those indices ran
+  past `board[26]` (AddressSanitizer: global-buffer-overflow, on most of
+  the computer's moves). It now checks `i - a*k` and `i - a*(diff - k)`.
+  This changes the computer's judgement of blots; chosen by David
+  (2026-10-20) over only bounding the indices. OpenBSD's copy has the
+  same code.
+- **`raw` renamed `rawtty`.** The global `struct termios raw` clashed with
+  curses' `raw()` in a static ncurses (Alpine's link failed).
+- `asciiverse/backgammon/LICENSE`: the BSD licence from the source header.
+- Left as it is: a hidden option in the colour question (`P` and the
+  password `losfurng`) that lets the player choose the dice.
+- Checked: Linux (glibc and static musl) at 100x30 and 120x40, with a
+  resize mid-game; the rules starting teachgammon from another folder; a
+  game saved under a 60-character name (cut to 49) in the data folder and
+  recovered from another folder. ASan and UBSan: four 40-second runs of
+  random keys, moves, saves, quits and resizes, clean after the `canhit`
+  fix (leak checking off: the game never frees its tables). macOS: not
+  built here.
+- `asciiverse/record/backgammon.py`: the preview, White against the
+  computer with moves chosen from the board on screen (legal sequences
+  that use the most dice, then most hits, most points made, fewest blots
+  left).

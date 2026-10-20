@@ -1,0 +1,6 @@
+# backgammon, its rules and tutorial teachgammon (found beside it), man
+# page, licence (from the source header)
+out/backgammon
+out/teachgammon
+backgammon/backgammon/backgammon.6
+asciiverse/backgammon/LICENSE
