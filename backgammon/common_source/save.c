@@ -76,6 +76,7 @@ save(struct move *mm, int n)
 	for (;;) {
 		writel(prompt);
 		fs = fname;
+		/* room for the name and its NUL: the last place ends it */
 		while ((*fs = readc()) != '\n') {
 			if (*fs == old.c_cc[VERASE]) {
 				if (fs > fname) {
@@ -88,11 +89,16 @@ save(struct move *mm, int n)
 					writec('\007');
 				continue;
 			}
+			if (fs == fname + sizeof(fname) - 1) {
+				writec('\007');
+				continue;
+			}
 			writec(*fs++);
 		}
 		*fs = '\0';
-		if ((fdesc = open(fname, O_RDWR)) == -1 && errno == ENOENT) {
-			if ((fdesc = creat(fname, 0600)) != -1)
+		if ((fdesc = open(datafile(fname), O_RDWR)) == -1 &&
+		    errno == ENOENT) {
+			if ((fdesc = creat(datafile(fname), 0600)) != -1)
 				break;
 		}
 		if (fdesc != -1) {
@@ -107,8 +113,8 @@ save(struct move *mm, int n)
 			cflag = 0;
 			close(fdesc);
 			if (yorn(0)) {
-				unlink(fname);
-				fdesc = creat(fname, 0600);
+				unlink(datafile(fname));
+				fdesc = creat(datafile(fname), 0600);
 				break;
 			} else {
 				cflag = 1;
@@ -149,7 +155,7 @@ recover(struct move *mm, const char *s)
 {
 	int     fdesc;
 
-	if ((fdesc = open(s, O_RDONLY)) == -1)
+	if ((fdesc = open(datafile(s), O_RDONLY)) == -1)
 		norec(s);
 	read(fdesc, board, sizeof board);
 	read(fdesc, off, sizeof off);

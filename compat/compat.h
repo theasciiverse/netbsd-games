@@ -56,4 +56,12 @@ const char *getprogname(void);
 void setprogname(const char *);
 #endif
 
+/* termios: BSD's OXTABS (expand tabs on output) is XTABS on Linux */
+#ifndef _WIN32
+#include <termios.h>
+#if !defined(OXTABS) && defined(XTABS)
+#define OXTABS XTABS
+#endif
+#endif
+
 #endif

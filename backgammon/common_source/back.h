@@ -184,3 +184,10 @@ void	wrscore(void);
 int	yorn(int);
 
 void move_init(struct move *);
+
+/* Asciiverse (asciiverse.c) */
+const char *sibling(const char *, const char *);
+const char *datafile(const char *);
+void	watchresize(void);
+int	resized(void);
+void	recentre(void);

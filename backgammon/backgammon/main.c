@@ -147,7 +147,8 @@ main(int argc __unused, char **argv)
 			if (yorn(0)) {
 
 				fixtty(&old);	/* restore tty */
-				execl(TEACH, "teachgammon", args[0]?args:0,
+				execl(sibling("teachgammon", TEACH),
+				      "teachgammon", args[0]?args:0,
 				      (char *) 0);
 
 				tflag = 0;	/* error! */
