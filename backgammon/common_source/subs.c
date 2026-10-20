@@ -38,6 +38,8 @@ __RCSID("$NetBSD: subs.c,v 1.21 2024/04/02 14:24:26 christos Exp $");
 #endif
 #endif /* not lint */
 
+#include <errno.h>
+
 #include "back.h"
 
 int     buffnum;
@@ -89,8 +91,16 @@ readc(void)
 		newpos();
 	}
 	buflush();
-	if (read(0, &c, 1) != 1)
-		errexit("readc");
+	/* Asciiverse: a resized terminal centres the board again and redraws
+	 * it, as Ctrl+L does */
+	while (read(0, &c, 1) != 1) {
+		if (errno != EINTR)
+			errexit("readc");
+		if (tflag && resized()) {
+			recentre();
+			return ('R');
+		}
+	}
 #ifdef WHY_IS_THIS_HARDWIRED_IN_HERE
 	if (c == '\177')
 		getout(0);

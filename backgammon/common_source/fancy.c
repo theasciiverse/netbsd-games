@@ -38,6 +38,9 @@ __RCSID("$NetBSD: fancy.c,v 1.20 2024/11/29 21:48:44 dholland Exp $");
 #endif
 #endif /* not lint */
 
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 #include "back.h"
 
 static void bsect(int, int, int, int);
@@ -74,6 +77,47 @@ static int lND;			/* length of ND */
 static int lUP;			/* length of UP */
 static int CO;			/* number of columns */
 static int LI;			/* number of lines */
+
+/*
+ * Asciiverse: the game's 80x24 screen, centred in a bigger terminal. CO and
+ * LI are the game's screen; offr and offc place its top left corner. Only
+ * direct cursor motion knows about them, so the moves that start from the
+ * terminal's own corner (home, carriage return) are not used when the
+ * screen is offset.
+ */
+static int offr;
+static int offc;
+
+static void
+centre(int rows, int cols)
+{
+	offr = rows > 24 ? (rows - 24) / 2 : 0;
+	offc = cols > 80 ? (cols - 80) / 2 : 0;
+}
+
+/* the terminal's size now, if it can be had */
+static int
+winsize(int *rows, int *cols)
+{
+	struct winsize ws;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 ||
+	    ws.ws_row == 0 || ws.ws_col == 0)
+		return 0;
+	*rows = ws.ws_row;
+	*cols = ws.ws_col;
+	return 1;
+}
+
+/* centre the screen in the terminal's new size (redrawn by the caller) */
+void
+recentre(void)
+{
+	int rows, cols;
+
+	if (winsize(&rows, &cols))
+		centre(rows, cols);
+}
 static int *linect;		/* array of lengths of lines on screen (the
 				 * actual screen is not stored) */
 
@@ -449,18 +493,18 @@ newpos(void)
 	}
 	if (CM) {		/* try CM to get there */
 		mode = 0;
-		m = (char *) tgoto(CM, c, r);
+		m = (char *) tgoto(CM, c + offc, r + offr);
 		ccount = (int)strlen(m);
 	}
 	/* try HO and local movement */
-	if (HO && (n = r + c * lND + lHO) < ccount) {
+	if (HO && offr == 0 && offc == 0 && (n = r + c * lND + lHO) < ccount) {
 		mode = 1;
 		ccount = n;
 	}
 	/* try various LF combinations */
 	if (r >= curr) {
 		/* CR, LF, and ND */
-		if ((n = (r - curr) + c * lND + 1) < ccount) {
+		if (offc == 0 && (n = (r - curr) + c * lND + 1) < ccount) {
 			mode = 2;
 			ccount = n;
 		}
@@ -478,7 +522,7 @@ newpos(void)
 	/* try corresponding UP combinations */
 	if (r < curr) {
 		/* CR, UP, and ND */
-		if ((n = (curr - r) * lUP + c * lND + 1) < ccount) {
+		if (offc == 0 && (n = (curr - r) * lUP + c * lND + 1) < ccount) {
 			mode = 5;
 			ccount = n;
 		}
@@ -603,6 +647,9 @@ clear(void)
 		linect[i] = -1;
 	buffnum = -1;		/* ignore leftover buffer contents */
 	tputs(CL, CO, addbuf);	/* put CL in buffer */
+	/* CL leaves the cursor in the terminal's corner: go to the screen's */
+	if (offr != 0 || offc != 0)
+		tputs(tgoto(CM, offc, offr), 1, addbuf);
 }
 
 void
@@ -724,6 +771,14 @@ getcaps(const char *s)
 	CO = tgetnum("co");	/* get number of columns */
 	if (CO == -1)
 		CO = 65;
+	/* the window's real size over the terminal type's; the game keeps
+	 * to 80x24 of it, centred */
+	winsize(&LI, &CO);
+	centre(LI, CO);
+	if (LI > 24)
+		LI = 24;
+	if (CO > 80)
+		CO = 80;
 
 	bufp = tbuf;		/* get padding character */
 	tgetstr("pc", &bufp);
@@ -753,6 +808,7 @@ getcaps(const char *s)
 		CL = NULL;
 		return (0);
 	}
+	watchresize();
 	linect = (int *) calloc(LI + 1, sizeof(int));
 	if (linect == NULL) {
 		write(2, "\r\nOut of memory!\r\n", 18);
