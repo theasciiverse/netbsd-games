@@ -79,8 +79,9 @@ static int CO;			/* number of columns */
 static int LI;			/* number of lines */
 
 /*
- * Asciiverse: the game's 80x24 screen, centred in a bigger terminal. CO and
- * LI are the game's screen; offr and offc place its top left corner. Only
+ * Asciiverse: the game's 80x24 screen, centred in a bigger terminal (by its
+ * board, below). CO and LI are the game's screen; offr and offc place its
+ * top left corner. Only
  * direct cursor motion knows about them, so the moves that start from the
  * terminal's own corner (home, carriage return) are not used when the
  * screen is offset.
@@ -88,11 +89,21 @@ static int LI;			/* number of lines */
 static int offr;
 static int offc;
 
+/*
+ * The board is the left 53 columns of the screen, and messages and help
+ * reach 80: centre the board as far as the whole 80 columns still fit.
+ */
+#define BOARDW 53
+
 static void
 centre(int rows, int cols)
 {
+	int board, room;
+
 	offr = rows > 24 ? (rows - 24) / 2 : 0;
-	offc = cols > 80 ? (cols - 80) / 2 : 0;
+	board = (cols - BOARDW) / 2;
+	room = cols - 80;
+	offc = room > 0 ? (board < room ? board : room) : 0;
 }
 
 /* the terminal's size now, if it can be had */

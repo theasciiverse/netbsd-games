@@ -250,7 +250,9 @@ backgammon and teachgammon (the rules and a tutorial game) are one title,
   limit, so a long name overflowed it; it now stops at 49 characters.
 - **Centred.** The game draws through its own cursor code (`fancy.c`), not
   curses, from the terminal's top left corner. Its 80x24 screen is now
-  centred in a bigger terminal: direct cursor motion adds the offset, the
+  centred in a bigger terminal, sideways by its 53-column board as far as
+  the 80 columns of messages still fit (20 columns in at 100, 33 at 120):
+  direct cursor motion adds the offset, the
   moves that start from the terminal's own corner (home, carriage return)
   are not used when the screen is offset, and a cleared screen moves to
   the screen's corner. The real window size is read over the terminal
