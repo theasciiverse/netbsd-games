@@ -105,8 +105,8 @@ main(int argc __unused, char **argv)
 		errexit("backgammon(gtty)");
 	noech = old;
 	noech.c_lflag &= ~ECHO;
-	raw = noech;
-	raw.c_lflag &= ~ICANON;	/* set up modes */
+	rawtty = noech;
+	rawtty.c_lflag &= ~ICANON;	/* set up modes */
 	ospeed = cfgetospeed(&old);	/* for termlib */
 
 	/* get terminal capabilities, and decide if it can cursor address */
@@ -125,10 +125,10 @@ main(int argc __unused, char **argv)
 	args[acnt] = '\0';
 	if (tflag) {		/* clear screen */
 		noech.c_oflag &= ~(ONLCR | OXTABS);
-		raw.c_oflag &= ~(ONLCR | OXTABS);
+		rawtty.c_oflag &= ~(ONLCR | OXTABS);
 		clear();
 	}
-	fixtty(&raw);		/* go into raw mode */
+	fixtty(&rawtty);		/* go into rawtty mode */
 
 	/* check if restored game and save flag for later */
 	if ((rfl = rflag) != 0) {

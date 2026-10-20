@@ -123,13 +123,13 @@ wrtext(const char  *const *t)
 			writec('\n');
 		} else {
 			writel("-->");
-			fixtty(&raw);
+			fixtty(&rawtty);
 			while ((i = readc()) != ' ' && i != '\n');
 			fixtty(&noech);
 			clear();
 		}
 		t++;
 	}
-	fixtty(&raw);
+	fixtty(&rawtty);
 	return (0);
 }

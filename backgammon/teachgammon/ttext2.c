@@ -143,7 +143,7 @@ wrtext(const char *const *txt)
 			writel(a);
 			writec('\n');
 		} else {
-			fixtty(&raw);
+			fixtty(&rawtty);
 			writel(prompt);
 			for (;;) {
 				if ((b = readc()) == '?') {
@@ -187,6 +187,6 @@ wrtext(const char *const *txt)
 				curmove(curr, 0);
 		}
 	}
-	fixtty(&raw);
+	fixtty(&rawtty);
 	return (0);
 }

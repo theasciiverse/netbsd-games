@@ -147,7 +147,7 @@ move(struct move *mm, int okay)
 	if (mm->mvlim == 0) {
 		writel(" but cannot use it.\n");
 		nexturn();
-		fixtty(&raw);
+		fixtty(&rawtty);
 		return;
 	}
 	/* initialize */
@@ -192,7 +192,7 @@ move(struct move *mm, int okay)
 		buflush();
 		sleep(3);
 	}
-	fixtty(&raw);		/* no more tty interrupt */
+	fixtty(&rawtty);		/* no more tty interrupt */
 }
 
 /* 	mvnum   == number of move (rel zero) */

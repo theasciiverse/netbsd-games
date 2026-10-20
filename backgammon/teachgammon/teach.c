@@ -65,8 +65,8 @@ main(int argc __unused, char *argv[])
 		errexit("teachgammon(gtty)");
 	noech = old;
 	noech.c_lflag &= ~ECHO;
-	raw = noech;
-	raw.c_lflag &= ~ICANON;	/* set up modes */
+	rawtty = noech;
+	rawtty.c_lflag &= ~ICANON;	/* set up modes */
 	ospeed = cfgetospeed(&old);	/* for termlib */
 	tflag = getcaps(getenv("TERM"));
 
@@ -77,7 +77,7 @@ main(int argc __unused, char *argv[])
 		getarg(mm, &argv);
 	if (tflag) {
 		noech.c_oflag &= ~(ONLCR | OXTABS);
-		raw.c_oflag &= ~(ONLCR | OXTABS);
+		rawtty.c_oflag &= ~(ONLCR | OXTABS);
 		clear();
 	}
 	wrtext(hello);

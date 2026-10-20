@@ -91,7 +91,7 @@ int	off[2];
 int	rscore;
 int	table[6][6];
 int	wscore;
-struct termios	old, noech, raw;
+struct termios	old, noech, rawtty;
 
 void
 move_init(struct move *mm)

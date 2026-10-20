@@ -131,7 +131,7 @@ extern	int	colen;		/* length of color of current player */
 
 extern int buffnum;
 
-extern	struct termios	old, noech, raw;/* original tty status */
+extern	struct termios	old, noech, rawtty;/* original tty status */
 
 extern	int	curr;		/* row position of cursor */
 extern	int	curc;		/* column position of cursor */
