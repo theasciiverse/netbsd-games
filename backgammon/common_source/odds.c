@@ -101,10 +101,14 @@ canhit(int i, int c)
 			addon = place + ((board[j] * a > 2 || j == b) ? 5 : 0);
 			if ((j == b && menstuck == 1) ||
 			    (j != b && menstuck == 0))
+				/* Asciiverse: the squares a man from j lands on
+				 * first, k or diff - k short of i, toward j
+				 * (i + a * k stepped away from j and past the
+				 * board's ends) */
 				for (k = 1; k < diff; k++)
 					if (k < 7 && diff - k < 7 &&
-					    (board[i + a * k] * a >= 0 ||
-						board[i + a * (diff - k)] >= 0))
+					    (board[i - a * k] * a >= 0 ||
+						board[i - a * (diff - k)] >= 0))
 						odds(k, diff - k, addon);
 			if ((j == b || menstuck < 2) && diff < 7)
 				odds(diff, 0, addon);
