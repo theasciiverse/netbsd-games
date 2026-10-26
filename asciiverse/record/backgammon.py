@@ -143,7 +143,7 @@ def fmt(moves):
     return ",".join(f"{pos(s)}-{pos(t)}" for s, t in moves)
 
 
-r = rec.Rec("backgammon", "Backgammon", args=("-w",))
+r = rec.Rec("bsd-backgammon", "BSD Backgammon", command="backgammon -w")
 r.pump(1.5)
 r.wait_for("continue", 5.0)
 r.key(b"\n", 1.5)

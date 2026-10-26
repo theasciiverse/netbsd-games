@@ -271,6 +271,10 @@ backgammon and teachgammon (the rules and a tutorial game) are one title,
 - **`raw` renamed `rawtty`.** The global `struct termios raw` clashed with
   curses' `raw()` in a static ncurses (Alpine's link failed).
 - `asciiverse/backgammon/LICENSE`: the BSD licence from the source header.
+- Catalog id `bsd-backgammon` (shown as BSD Backgammon, beside Nard), so
+  the archives are `bsd-backgammon-<target>` and the preview is
+  `asciiverse/casts/bsd-backgammon.cast`; the program is still
+  `backgammon`.
 - Left as it is: a hidden option in the colour question (`P` and the
   password `losfurng`) that lets the player choose the dice.
 - Checked: Linux (glibc and static musl) at 100x30 and 120x40, with a
