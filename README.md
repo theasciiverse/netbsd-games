@@ -20,5 +20,5 @@ Each game installs on its own:
 | Worms | `av install worms` | `./worms` |
 
 Start one with `av play <name>`, or download its archive for your system from
-this repository's Releases and run it from there (`.exe` on Windows).
+this repository's Releases and run it from there.
 
