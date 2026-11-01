@@ -46,6 +46,9 @@ getstring(char *cp, int mx)
 		refresh();	/* update screen */
 
 		ch = getchar();	/* get character */
+		/* Asciiverse: ncurses leaves Enter as a carriage return */
+		if (ch == '\r')
+			ch = CH_NEWLINE;
 
 		switch (ch) {
 		case CH_ERASE:	/* back up one character */

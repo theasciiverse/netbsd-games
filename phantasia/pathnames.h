@@ -31,12 +31,20 @@
  *	@(#)pathnames.h	8.2 (Berkeley) 4/2/94
  */
 
-#define	_PATH_GAMEPROG	"/usr/games/phantasia"
-#define	_PATH_GOLD	"/var/games/phantasia/gold"
-#define	_PATH_LASTDEAD	"/var/games/phantasia/lastdead"
-#define	_PATH_MESS	"/var/games/phantasia/mess"
-#define	_PATH_MONST	"/var/games/phantasia/monsters"
-#define	_PATH_MOTD	"/var/games/phantasia/motd"
-#define	_PATH_PEOPLE	"/var/games/phantasia/characs"
-#define	_PATH_SCORE	"/var/games/phantasia/scoreboard"
-#define	_PATH_VOID	"/var/games/phantasia/void"
+/*
+ * Asciiverse: the player's own files in their data folder, and the game's
+ * own path for another try (asciiverse.c), not the shared setgid files.
+ */
+const char *av_path(const char *);
+const char *av_gameprog(void);
+void av_init(const char *);
+
+#define	_PATH_GAMEPROG	av_gameprog()
+#define	_PATH_GOLD	av_path("gold")
+#define	_PATH_LASTDEAD	av_path("lastdead")
+#define	_PATH_MESS	av_path("mess")
+#define	_PATH_MONST	av_path("monsters")
+#define	_PATH_MOTD	av_path("motd")
+#define	_PATH_PEOPLE	av_path("characs")
+#define	_PATH_SCORE	av_path("scoreboard")
+#define	_PATH_VOID	av_path("void")

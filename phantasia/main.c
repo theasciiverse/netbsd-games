@@ -92,6 +92,7 @@ main(int argc, char **argv)
 	time_t  seconds;		/* for time of day */
 	double  dtemp;			/* for temporary calculations */
 
+	av_init(argv[0]);		/* Asciiverse: the player's files */
 	initialstate();			/* init globals */
 
 	/* process arguments */
@@ -312,8 +313,10 @@ initialstate(void)
 	Windows = FALSE;
 	Echo = TRUE;
 
-	/* setup login name */
-	if ((Login = getlogin()) == NULL) {
+	/* setup login name; Asciiverse: $USER or $LOGNAME first, as larn */
+	if (((Login = getenv("USER")) == NULL || *Login == '\0') &&
+	    ((Login = getenv("LOGNAME")) == NULL || *Login == '\0') &&
+	    (Login = getlogin()) == NULL) {
 		pw = getpwuid(getuid());
 		if (pw == NULL) {
 			errx(1, "Who are you?");
