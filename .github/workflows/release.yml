@@ -104,5 +104,5 @@ jobs:
         run: |
           gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "NetBSD games $TAG" \
-                 --notes "backgammon (with teachgammon), canfield, cgram, hack, hunt, larn, rogue and warp, and the screen pieces rain and worms, $TAG, from NetBSD's src/games, built for the Asciiverse catalog: one archive per game and target."
+                 --notes "backgammon (with teachgammon), canfield, cgram, hack, hunt, larn, phantasia, rogue and warp, and the screen pieces rain and worms, $TAG, from NetBSD's src/games, built for the Asciiverse catalog: one archive per game and target."
           gh release upload "$TAG" dist/* -R "$GITHUB_REPOSITORY" --clobber

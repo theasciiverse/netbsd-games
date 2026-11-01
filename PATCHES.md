@@ -1,14 +1,15 @@
 # Changes from upstream
 
 This is the Asciiverse packaging of the BSD games that Mike Sharov's
-bsd-games (packaged in `theasciiverse/bsdgames`) dropped: canfield, cgram,
-hack, hunt, larn, rogue and warp, from NetBSD's own source tree. The first
-commit imports NetBSD's `src/games` folders for them unchanged, at
-NetBSD commit `1fc61a5c45cdd2a67b7e1b272c41a67aa200f621` (2026-10-13,
-tag `netbsd-1fc61a5`); phantasia came along and is not built. A later
-commit imports `rain` and `worms`, Eric P. Scott's screen pieces from
-Caltech (1980), unchanged from the same NetBSD commit; they are Art &
-Demos titles (kind `art`) in the catalog. A third imports `backgammon`
+bsd-games (packaged in `theasciiverse/bsdgames`) dropped: canfield,
+cgram, hack, hunt, larn, phantasia, rogue and warp, from NetBSD's own
+source tree. The first commit imports NetBSD's `src/games` folders for
+them unchanged, at NetBSD commit
+`1fc61a5c45cdd2a67b7e1b272c41a67aa200f621` (2026-10-13, tag
+`netbsd-1fc61a5`), and phantasia with them, built since 2026-11-01. A
+later commit imports `rain` and `worms`, Eric P. Scott's screen pieces
+from Caltech (1980), unchanged from the same NetBSD commit; they are Art
+& Demos titles (kind `art`) in the catalog. A third imports `backgammon`
 (Alan Char, 1980) with its rules and tutorial, `teachgammon`, unchanged
 from the same commit (all 29 files checked against its tree), which
 Sharov's bsd-games had dropped in favour of GNU Backgammon. Everything
@@ -146,6 +147,51 @@ BSD Games.
 - `asciiverse/larn/NOTICE`, in the archive: Larn is copyright 1986 Noah
   Morgan, free by his terms for Larn 12.0 as long as no profit is made,
   so this title is free and never sold.
+
+## phantasia
+
+Edward Estes' Phantasia 3.3.2 (1986, from his HP 2000 game of 1978-79),
+which its author put out without copyright (`phantasia/COPYRIGHT`).
+Sharov's bsd-games dropped it as "unplayable on single-user systems": it
+is built for many players of one machine, but a player alone has the
+whole realm to roam, its monsters, gold and levels.
+
+- **Files in the data folder.** NetBSD installs phantasia setgid games,
+  sharing its files between every player of the machine in
+  `/var/games/phantasia`, made at build time by `setup.c`. Here they are
+  the player's own, `bsdgames/phantasia` in the data folder:
+  `pathnames.h` names them through `av_path()`, and `av_init()`, called
+  first in `main()`, makes the folder and the empty files `setup.c` makes
+  on the first run, and builds the binary monster database there from
+  `monsters.asc`, read from the folder the game was started in
+  (`phantasia/asciiverse.c`). Built on the player's machine, the database
+  matches its byte layout. `setup.c` is not built.
+- **Another try starts this game.** "Care to give it another try?" ran
+  `/usr/games/phantasia`; it now runs the program by the path it was
+  started with, or found on `$PATH` (`av_gameprog()`).
+- **Enter ends a line.** Phantasia reads keys with stdio's `getchar()`.
+  NetBSD's curses leaves the terminal turning Enter into a newline, but
+  ncurses turns that off and translates only in `getch()`, so a name or a
+  password could never be finished. `getstring()` (`io.c`) now takes a
+  carriage return as the newline.
+- **Built with curses' `bool`.** `phantstruct.h` defines `bool` as `char`
+  for its file records, and the sources `#undef` it before including
+  `<curses.h>` for curses' own. With curses already included (centring),
+  that include does nothing, so `phantasia/asciiverse-compat.h` gives a
+  `bool` typedef that outlasts the `#undef`, and brings `<time.h>` along
+  as NetBSD's headers do.
+- The login name comes from `$USER` or `$LOGNAME` before `getlogin()`, as
+  in larn.
+- Centred by `compat/centre.h` and `centre.c`, like canfield and cgram.
+- Left as it is: the multi-player side (other players, talk, the throne
+  and the grail) works only among players sharing one data folder, so in
+  practice the player is alone in the realm. The wizard (`-S`) is root.
+- Checked: Linux (glibc) at 100x30: a new character, fights, gold, quit,
+  and the files made on the first run. The static musl and macOS builds
+  are not built here, and "another try" after a death is not tried.
+- `asciiverse/record/phantasia.py`: the preview, a Fighter that wanders
+  out, fights what it meets and takes the gold it finds; several takes,
+  kept by the kinds of monster met.
 
 ## rogue
 

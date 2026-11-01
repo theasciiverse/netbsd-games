@@ -1,0 +1,10 @@
+# What phantasia's archive holds, beside each other at the top: the binary
+# from out/, the monster list it builds its monster database from on the
+# first run (read from the folder it is started in, where av installs it),
+# the man page and the author's notice (the game is not copyrighted).
+# phantasia writes nothing there: its characters, scoreboard and the rest
+# go to bsdgames/phantasia under the player's XDG data folder.
+out/phantasia
+phantasia/monsters.asc
+phantasia/phantasia.6
+phantasia/COPYRIGHT
