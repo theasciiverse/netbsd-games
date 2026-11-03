@@ -841,6 +841,7 @@ again:
 			putchar('\n');
 	} else {
 		printf("Enter your code name: ");
+		(void) fflush(stdout);	/* musl does not flush before reading */
 		if (fgets(name, sizeof(name), stdin) == NULL)
 			exit(1);
 	}
@@ -858,6 +859,7 @@ again:
 		}
 	if (team == ' ') {
 		printf("Enter your team (0-9 or nothing): ");
+		(void) fflush(stdout);	/* musl does not flush before reading */
 		i = getchar();
 		if (isdigit(i))
 			team = i;

@@ -108,6 +108,10 @@ BSD Games.
   pause uses `sigprocmask` and `sigsuspend` instead of BSD `sigblock`,
   `sigpause` and `sigsetmask` (`sigpause` means something else on Linux).
   `hunt/asciiverse-compat.h` adds `INFTIM` and the headers musl needs.
+- The questions before the game (code name, team) show at once: the
+  prompts are flushed before the answer is read, which glibc does by
+  itself and musl, used for the static Linux builds, does not, so the
+  screen stayed blank while hunt waited for a name.
 - Centred by `compat/centre.h`, the whole 80x24 arena and status
   (`nb_fixed()`); `hunt` reads its keys itself, so a resize shows at the
   next refresh.
