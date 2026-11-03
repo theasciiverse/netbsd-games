@@ -11,6 +11,6 @@ ${HOST_CC:-$CC} $HFLAGS makedefs.c "$COMPAT" -o "$B/makedefs"
 for f in $(sed -n '/^SRCS/,/rnd\.c/p' Makefile | tr -d '\\' | sed 's/SRCS+=//') asciiverse.c; do
 	$CC $HFLAGS -c "$f" -o "$B/${f%.c}.o"
 done
-$CC "$B"/*.o "$COMPAT" $HFLAGS $LDFLAGS $LIBS -o "$OUT/hack" 2>/dev/null ||
-	$CC "$B"/*.o "$COMPAT" $HFLAGS $LDFLAGS $LIBS -ltinfo -o "$OUT/hack"
+$CC "$B"/*.o "$COMPAT" "$(dirname "$COMPAT")/tiparm.c" $HFLAGS $LDFLAGS $LIBS -o "$OUT/hack" 2>/dev/null ||
+	$CC "$B"/*.o "$COMPAT" "$(dirname "$COMPAT")/tiparm.c" $HFLAGS $LDFLAGS $LIBS -ltinfo -o "$OUT/hack"
 echo "built hack"

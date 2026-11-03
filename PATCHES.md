@@ -32,10 +32,12 @@ BSD Games.
   static Linux in Alpine (x86_64, aarch64) and macOS (x86_64, arm64).
 - `compat.h` also gives `__CTASSERT` (a `_Static_assert`), for worms,
   and maps BSD's `OXTABS` termios flag to Linux's `XTABS`, for backgammon.
-- On macOS `compat.h` makes `tiparm()` a `tparm()` call with its two
-  numbers as longs, for hack and larn: the system ncurses is 5.7, which
-  has no `tiparm()` (checked against the SDK's `libncurses.tbd`), and its
-  `tparm()` reads its numbers as longs.
+- On macOS `compat.h` sends `tiparm()` to `av_tiparm()`
+  (`compat/tiparm.c`, linked into hack and larn), which calls `tparm()`
+  with its two numbers as longs. The libncurses of older macOS (5.7, as
+  in the 11.3 SDK's `libncurses.tbd`) has no `tiparm()`, while the
+  macOS 15 SDK's headers declare it, so a plain macro would clash with
+  that declaration and calling it would not run on older systems.
 - `compat/centre.h` and `compat/centre.c` centre the curses games (canfield,
   cgram, hunt, rogue) in the terminal: New BSD Games' `src/centre.h` (CC0),
   split so a game of several source files shares one state. `stdscr`

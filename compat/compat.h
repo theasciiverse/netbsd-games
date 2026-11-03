@@ -57,11 +57,14 @@ void setprogname(const char *);
 #endif
 
 /*
- * macOS's ncurses (5.7) has no tiparm(). Every caller here (hack, larn)
- * passes a capability and two numbers, which its tparm() reads as longs.
+ * macOS's libncurses before the macOS 15 SDK (5.7) has no tiparm(), and
+ * newer SDK headers declare it, so on macOS calls go to av_tiparm()
+ * (compat/tiparm.c, linked into hack and larn), which hands its two
+ * numbers to tparm() as longs: every caller passes a capability and two.
  */
 #ifdef __APPLE__
-#define tiparm(s, a, b) tparm((s), (long)(a), (long)(b))
+#define tiparm(...) av_tiparm(__VA_ARGS__)
+char *av_tiparm(const char *, ...);
 #endif
 
 /* termios: BSD's OXTABS (expand tabs on output) is XTABS on Linux */
