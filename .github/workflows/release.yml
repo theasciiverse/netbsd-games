@@ -3,20 +3,24 @@
 # in asciiverse/archive/ is its own catalog title, so each gets its own
 # archive per target, named <id>-<target>.tar.gz, plus one SHA256SUMS file
 # for all of them, attached to a GitHub release (hub/catalog/SCHEMA.md,
-# release.source = "github"). Runs on a pushed tag, or by hand for an
-# existing tag.
+# release.source = "github"). Runs on a pushed release tag, or by hand for
+# an existing one. NetBSD's src/games has no version of its own, so a tag
+# is 0, the date of the imported NetBSD commit, then ours:
+# 0+20261013-av.1 (see PATCHES.md).
 #
 # Linux builds run in Alpine and link ncurses statically, so the binaries
 # carry the -musl triple that av looks for first and need no libncurses on
 # the player's machine. macOS links the system ncurses, which every Mac
-# has (hack, larn and warp draw through its terminfo). No Windows build:
+# has (hack, larn and warp draw through its terminfo); the compiler
+# carries -arch, so HOST_CC builds hack's makedefs, which runs during the
+# build, for the runner itself. No Windows build:
 # the games lean on POSIX terminals, signals and, for hunt, BSD sockets.
 
 name: release
 
 on:
   push:
-    tags: ["*"]
+    tags: ["*-av.*"]
   workflow_dispatch:
     inputs:
       tag:
@@ -76,7 +80,7 @@ jobs:
 
       - name: Build and package
         run: |
-          LIBS=-lncurses CFLAGS="-O2 -arch ${{ matrix.arch }}" LDFLAGS="-arch ${{ matrix.arch }}" asciiverse/build.sh
+          CC="cc -arch ${{ matrix.arch }}" HOST_CC=cc LIBS=-lncurses CFLAGS=-O2 asciiverse/build.sh
           file out/hack
           asciiverse/package.sh ${{ matrix.target }}
 

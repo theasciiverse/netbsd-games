@@ -56,6 +56,14 @@ const char *getprogname(void);
 void setprogname(const char *);
 #endif
 
+/*
+ * macOS's ncurses (5.7) has no tiparm(). Every caller here (hack, larn)
+ * passes a capability and two numbers, which its tparm() reads as longs.
+ */
+#ifdef __APPLE__
+#define tiparm(s, a, b) tparm((s), (long)(a), (long)(b))
+#endif
+
 /* termios: BSD's OXTABS (expand tabs on output) is XTABS on Linux */
 #ifndef _WIN32
 #include <termios.h>

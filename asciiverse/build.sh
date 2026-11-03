@@ -5,7 +5,7 @@
 #
 #   asciiverse/build.sh                                   # Debian, Ubuntu
 #   LIBS=-lncursesw LDFLAGS=-static asciiverse/build.sh   # Alpine, static
-#   LIBS=-lncurses asciiverse/build.sh                    # macOS
+#   CC="cc -arch arm64" HOST_CC=cc LIBS=-lncurses asciiverse/build.sh  # macOS
 #
 # compat/ supplies what the games expect from NetBSD's own headers and libc.
 set -eu

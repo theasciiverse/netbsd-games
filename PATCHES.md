@@ -32,6 +32,10 @@ BSD Games.
   static Linux in Alpine (x86_64, aarch64) and macOS (x86_64, arm64).
 - `compat.h` also gives `__CTASSERT` (a `_Static_assert`), for worms,
   and maps BSD's `OXTABS` termios flag to Linux's `XTABS`, for backgammon.
+- On macOS `compat.h` makes `tiparm()` a `tparm()` call with its two
+  numbers as longs, for hack and larn: the system ncurses is 5.7, which
+  has no `tiparm()` (checked against the SDK's `libncurses.tbd`), and its
+  `tparm()` reads its numbers as longs.
 - `compat/centre.h` and `compat/centre.c` centre the curses games (canfield,
   cgram, hunt, rogue) in the terminal: New BSD Games' `src/centre.h` (CC0),
   split so a game of several source files shares one state. `stdscr`
@@ -79,8 +83,9 @@ BSD Games.
   files hack expects (`hack/asciiverse.c`); `HACKDIR` and `-d` still
   choose another. `help`, `hh`, `data`, `rumors` and `news` are read from
   the folder the game was started in first (`config.h`).
-- Build: `asciiverse/build/hack.sh` builds `makedefs`, generates
-  `hack.onames.h` and builds the game, linking libtinfo where it is
+- Build: `asciiverse/build/hack.sh` builds `makedefs` for the build
+  machine (`HOST_CC`, so a macOS cross-architecture build can run it),
+  generates `hack.onames.h` and builds the game, linking libtinfo where it is
   separate. Tab expansion uses `XTABS` on Linux where the BSDs have
   `OXTABS`. hack's own `delay_output()` is renamed
   `hack_delay_output()`, since ncurses has one with another signature.
